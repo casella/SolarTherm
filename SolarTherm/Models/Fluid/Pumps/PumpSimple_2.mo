@@ -45,7 +45,7 @@ equation
   Ex_in=fluid_a.m_flow*((inStream(fluid_a.h_outflow)-h_dead)-T_amb*(s_in-s_dead));
   Ex_out=-fluid_b.m_flow*((actualStream(fluid_b.h_outflow)-h_dead)-T_amb*(s_out-s_dead));
   
-  W_loss+Ex_in-Ex_out-Ex_des=0;
+  Ex_in-Ex_out-Ex_des=0;
   der(Ex_loss)=Ex_des;
   
   annotation (Documentation(revisions="<html>

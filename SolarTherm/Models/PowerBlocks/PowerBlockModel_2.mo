@@ -25,7 +25,7 @@ model PowerBlockModel_2
   parameter Real nu_net=0.9 "Estimated gross to net conversion factor at the power block" annotation(Dialog(group="Parasities energy losses"));
   parameter Real W_base=0.0055*294.188e6 "Power consumed at all times" annotation(Dialog(group="Parasities energy losses"));
 
-  Modelica.Blocks.Interfaces.RealInput T_amb annotation (Placement(
+  Modelica.Blocks.Interfaces.RealInput T_amb if enable_losses annotation (Placement(
         transformation(extent={{-12,-12},{12,12}},
         rotation=-90,
         origin={1.77636e-015,80}),                  iconTransformation(

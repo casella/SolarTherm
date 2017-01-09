@@ -63,7 +63,7 @@ model Tank_2
         rotation=-90,
         origin={45,97})));
 
-  Modelica.Blocks.Interfaces.RealInput T_amb annotation (Placement(
+  Modelica.Blocks.Interfaces.RealInput T_amb if enable_losses annotation (Placement(
         transformation(
         extent={{-16,-16},{16,16}},
         rotation=-90,
