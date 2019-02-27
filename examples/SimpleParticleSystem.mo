@@ -171,6 +171,7 @@ model SimpleParticleSystem
 		delay=wdelay);
 
 	SolarTherm.Models.CSP.CRS.HeliostatsField.SwitchedCL CL(
+		//redeclare model OptEff=SolarTherm.Models.CSP.CRS.HeliostatsField.IdealIncOE(alt_fixed=45),
 		redeclare model OptEff=SolarTherm.Models.CSP.CRS.HeliostatsField.FileOE(
 			angles=angles, file=opt_file),
 		orient_north=wea.orient_north,
