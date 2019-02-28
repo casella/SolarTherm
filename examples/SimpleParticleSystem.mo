@@ -170,12 +170,17 @@ model SimpleParticleSystem
 		file=wea_file,
 		delay=wdelay);
 
-	SolarTherm.Models.CSP.CRS.HeliostatsField.SwitchedCL CL(
+	SolarTherm.Models.CSP.CRS.HeliostatsField.SwitchedCL_2 CL(
 		//redeclare model OptEff=SolarTherm.Models.CSP.CRS.HeliostatsField.IdealIncOE(alt_fixed=45),
 		redeclare model OptEff=SolarTherm.Models.CSP.CRS.HeliostatsField.FileOE(
-			angles=angles, file=opt_file),
+		angles=angles, file=opt_file),
 		orient_north=wea.orient_north,
-		A=A_col
+		A=A_col,
+		t_con_on_delay=0,
+		t_con_off_delay=0,
+		ramp_order=1,
+		dni_start=dni_go,
+		dni_stop=dni_go
 		);
 
 	SolarTherm.Models.CSP.CRS.Receivers.PlateRC RC(
@@ -288,10 +293,16 @@ equation
 
 	if radiance_good and fill_htnk then
 		lift_rec.m_flow_set = m_flow_fac*sum(RC.R)/(eff_opt*A_col*1000);
+		CL.defocus = false;
+		CL.R_dfc = 0;
 	elseif radiance_good and not fill_htnk then
 		lift_rec.m_flow_set = m_flow_blk;
+		CL.defocus = true;
+		CL.R_dfc = lift_rec.m_flow_set*cp_set*(T_hot_set - T_cold_set)*1.28; // assuming ~20% losses in the receiver
 	else
 		lift_rec.m_flow_set = 0;
+		CL.defocus = false;
+		CL.R_dfc = 0;
 	end if;
 
 	lift_ext.m_flow_set = if fill_ctnk then m_flow_blk else 0;
