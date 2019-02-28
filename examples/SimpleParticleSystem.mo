@@ -85,10 +85,13 @@ model SimpleParticleSystem
 	parameter SI.Efficiency eff_ext = 0.9 "Extractor efficiency";
 
 	parameter Real par_fr = 0.17 "Parasitics fraction of power block rating at design point";
-	parameter Real par_fix_fr = 0.0 "Fixed parasitics as fraction of net rating";
+	parameter Real par_fix_fr = 0.0055 "Fixed parasitics as fraction of net rating";
 
 	parameter SI.Temperature blk_T_amb_des = 298.15 "Ambient temperature at design point";
 	parameter SI.Temperature par_T_amb_des = 298.15 "Ambient temperature at design point";
+
+	parameter Real par_cf[:] = {0.0636, 0.803, -1.58, 1.7134} "Power block parasitics coefficients"; //TODO: Update the values for a sCO2 cycle
+	parameter Real par_ca[:] = {1, 0.0025} "Power block parasitics coefficients"; //TODO: Update the values for a sCO2 cycle
 
 	// Calculated Parameters
 	parameter SI.HeatFlowRate Q_flow_des = if fixed_field then (if match_sam then R_des/((1 + rec_fr)*SM) else R_des*(1 - rec_fr) / SM) else P_gro/eff_cyc "Heat to power block at design";
@@ -173,7 +176,7 @@ model SimpleParticleSystem
 	SolarTherm.Models.CSP.CRS.HeliostatsField.SwitchedCL_2 CL(
 		//redeclare model OptEff=SolarTherm.Models.CSP.CRS.HeliostatsField.IdealIncOE(alt_fixed=45),
 		redeclare model OptEff=SolarTherm.Models.CSP.CRS.HeliostatsField.FileOE(
-		angles=angles, file=opt_file),
+			angles=angles, file=opt_file),
 		orient_north=wea.orient_north,
 		A=A_col,
 		t_con_on_delay=0,
@@ -233,8 +236,15 @@ model SimpleParticleSystem
 
 	SolarTherm.Models.PowerBlocks.HeatPB PB(
 		redeclare package Medium=Medium,
-		P_rate=P_name,
+		P_rate=P_gro,
 		eff_adj=eff_adj);
+
+	SolarTherm.Models.PowerBlocks.GenericParasitics par(
+		P_par_des=par_fr*P_gro,
+		P_gross_des=P_gro,
+		T_amb_des=par_T_amb_des,
+		cf=par_cf,
+		ca=par_ca);
 
 	SolarTherm.Models.Control.Trigger hf_trig(
 		low=m_up_warn,
@@ -267,6 +277,7 @@ equation
 	connect(wea.wbus, CL.wbus);
 	connect(wea.wbus, RC.wbus);
 	connect(wea.wbus, PB.wbus);
+	connect(wea.wbus, par.wbus);
 	connect(CL.R_foc, RC.R);
 	connect(STC.port_b, lift_rec.port_a);
 	connect(lift_rec.port_b, RC.port_a);
@@ -280,6 +291,8 @@ equation
 
 	connect(ext.Q_flow, PB.Q_flow);
 	connect(ext.T, PB.T);
+
+	connect(PB.P, par.P_gen);
 
 	connect(hf_trig.x, STH.m);
 	connect(cf_trig.x, STC.m);
@@ -309,7 +322,7 @@ equation
 
 	CL.track = true;
 
-	P_elec = PB.P;
+	P_elec = PB.P - (par.P_par + par_fix_fr*P_net + lift_rec.W + lift_ext.W + lift_stc.W); //TODO: add parasitic losses in the heliostat field and tanks
 	der(E_elec) = P_elec;
 	der(R_spot) = P_elec*pri.price;
 	annotation(experiment(StartTime=0.0, StopTime=31536000.0, Interval=60, Tolerance=1e-06));
