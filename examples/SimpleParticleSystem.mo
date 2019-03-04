@@ -15,6 +15,7 @@ model SimpleParticleSystem
 	//TODO: Add fixed_field boolean option
 	//TODO: Add Models.Analysis.Performance per to calc revenue
 	//TODO: Add SolarTherm.Models.PowerBlocks.GenericParasitics par and include lifts parasitic power uses
+	//TODO" change the tower diameter to 30 m and do the optical simulation again
 
 	// Input Parameters
 	// *********************
