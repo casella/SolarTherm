@@ -116,13 +116,13 @@ model SimpleParticleSystem
 
 	parameter SI.Irradiance dni_go = 500 "Minimum DNI to start the receiver";
 
-	parameter SI.MassFlowRate m_flow_fac = 	SM*Q_flow_des/(cp_set*(T_hot_set - T_cold_set)) "Mass flow rate to receiver at design";
+	parameter SI.MassFlowRate m_flow_fac = SM*Q_flow_des/(cp_set*(T_hot_set - T_cold_set)) "Mass flow rate to receiver at design";
 	parameter SI.MassFlowRate m_flow_blk = Q_flow_des/(cp_set*(T_hot_set - T_cold_set)) "Mass flow rate to power block at design";
 
-	parameter SI.Mass m_up_warn = 0.85*m_max;
-	parameter SI.Mass m_up_stop = 0.95*m_max;
+	parameter SI.Mass m_up_warn = 0.85*m_max "Tank full trigger lower bound";
+	parameter SI.Mass m_up_stop = 0.95*m_max "Tank full trigger upper bound";
 
-	parameter Real split_cold = 0.95 "Starting fluid fraction in cold tank";
+	parameter Real split_cold = 0.95 "Starting particles fraction in cold tank";
 
 	// Cost data
 	parameter Real r_disc = 0.07 "Discount rate";
