@@ -4,6 +4,7 @@ model ReceiverControl
   parameter SI.Temperature T_ref=from_degC(570) "Setpoint of temperature";
   parameter SI.MassFlowRate m_flow_max=1400 "Maximum mass flow rate";
   parameter SI.MassFlowRate m_flow_min=0 "Mass flow rate when control off";
+  parameter Real L_on = 30 "Level of start discharge";
   parameter Real L_off=10 "Level of stop discharge";
   parameter Real L_df_on=99 "Level of start defocus";
   parameter Real L_df_off=96 "Level of stop defocus";
@@ -36,7 +37,7 @@ model ReceiverControl
     annotation (Placement(transformation(extent={{-130,-80},{-90,-40}})));
   Modelica.Blocks.Interfaces.RealInput T_mea
     annotation (Placement(transformation(extent={{-130,40},{-90,80}})));
-  Level2Logic hotTankLogic(level_max=30, level_min=L_off)
+  Level2Logic hotTankLogic(level_max=L_on, level_min=L_off)
     annotation (Placement(transformation(extent={{-74,-10},{-54,10}})));
   Modelica.Blocks.Logical.And and1
     annotation (Placement(transformation(extent={{-34,-22},{-14,-2}})));
