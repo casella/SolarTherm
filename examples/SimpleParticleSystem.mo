@@ -11,11 +11,6 @@ model SimpleParticleSystem
 	extends Modelica.Icons.Example;
 
 	//TODO: Update cost data based on SAM's latest version i.e. 2018 version
-	//TODO: Change all naming and wording to betetr ones e.e. A_field for A_col
-	//TODO: Add fixed_field boolean option
-	//TODO: Add Models.Analysis.Performance per to calc revenue
-	//TODO: Add SolarTherm.Models.PowerBlocks.GenericParasitics par and include lifts parasitic power uses
-	//TODO" change the tower diameter to 30 m and do the optical simulation again
 
 	// Input Parameters
 	// *********************
@@ -32,22 +27,25 @@ model SimpleParticleSystem
 		allowFlowReversal=false) "System props and default values";
 	// Can provide details of modelling accuracy, assumptions and initialisation
 
-	parameter String wea_file = Modelica.Utilities.Files.loadResource("modelica://SolarTherm/Data/Weather/USA_CA_Daggett.Barstow-Daggett.AP.723815_TMY3.motab") "Weather file";
+	parameter String wea_file = Modelica.Utilities.Files.loadResource("modelica://SolarTherm/Data/Weather/USA_CA_Daggett.Barstow-Daggett.AP.723815_TMY3.motab") "Weather data file";
 	parameter Real wdelay[8] = {1800,1800,0,0,0,0,0,0} "Weather file delays";
 
 	parameter String pri_file = Modelica.Utilities.Files.loadResource("modelica://SolarTherm/Data/Prices/aemo_vic_2014.motab") "Electricity price file";
 	parameter Currency currency = Currency.USD "Currency used for cost analysis";
 
+	parameter Boolean const_dispatch = true "Constant dispatch of energy";
+	parameter String sch_file = Modelica.Utilities.Files.loadResource("modelica://SolarTherm/Data/Schedules/daily_sch_0.motab") if not const_dispatch "Discharging schedule from a file";
+
 	// Field
 	parameter String opt_file = Modelica.Utilities.Files.loadResource("modelica://SolarTherm/Data/Optics/g3p3_opt_eff.motab") "Optical efficiency file";
-	parameter Solar_angles angles = Solar_angles.ele_azi "Angles used in the lookup table file";
+	parameter Solar_angles angles = Solar_angles.ele_azi "Angles used in the optical efficiency lookup table file";
 
-	parameter SI.Efficiency eff_opt = 0.4863 "Efficiency of optics at design point (max in opt_file)";
+	parameter SI.Efficiency eff_opt = 0.48 "Average annual field optical efficiency";
 	parameter SI.Irradiance dni_des = 1000 "DNI at design point";
 	parameter Real C = 1200 "Concentration ratio";
 
 	parameter SI.Length H_tower = 200 "Tower height";
-	parameter SI.Diameter D_tower = 20 "Tower diameter";
+	parameter SI.Diameter D_tower = 30 "Tower diameter";
 
 	parameter Real SM = 2.5 "Solar multiple";
 	parameter Real land_mult = 1.0 "Land area multiplier";
@@ -58,9 +56,9 @@ model SimpleParticleSystem
 	parameter Real em_particle = 0.86 "Emissivity of reciever";
 	parameter Real ab_particle = 0.93 "Absorptivity of reciever";
 
-	parameter SI.CoefficientOfHeatTransfer h_th_rec = 10 "Receiver heat tranfer coefficient"; //TODO back calc this based on rec_fr and knowing radiation losses at design. Note for convection you need to calc equivalent surface area not A_aper
+	parameter SI.CoefficientOfHeatTransfer h_th_rec = 5 "Receiver heat tranfer coefficient"; //TODO back calc this based on rec_fr and knowing radiation losses at design. Note for convection you need to calc equivalent surface area not A_aper
 
-	parameter SI.RadiantPower R_des(fixed= if fixed_field then true else false) "Input power to receiver at design";
+	parameter SI.RadiantPower R_des(fixed= if fixed_field then true else false) "Input power to receiver at design point";
 
 	parameter Real rec_fr = 0.165 "Receiver loss fraction of radiance at design point";
 	parameter SI.Temperature rec_T_amb_des = 298.15 "Ambient temperature at design point";
@@ -68,17 +66,17 @@ model SimpleParticleSystem
 	// Storage
 	parameter Real t_storage(unit="h") = 14 "Hours of storage";
 
-	parameter Medium.Temperature T_cold_set = CV.from_degC(550) "Target cold tank T";
-	parameter Medium.Temperature T_hot_set = CV.from_degC(700) "Target hot tank T";
+	parameter Medium.Temperature T_cold_set = CV.from_degC(550) "Target cold tank temperature";
+	parameter Medium.Temperature T_hot_set = CV.from_degC(700) "Target hot tank temperature";
 
-	parameter Medium.Temperature T_cold_start = CV.from_degC(550) "Cold tank starting T";
-	parameter Medium.Temperature T_hot_start = CV.from_degC(700) "Hot tank starting T";
+	parameter Medium.Temperature T_cold_start = CV.from_degC(550) "Cold tank starting temperature";
+	parameter Medium.Temperature T_hot_start = CV.from_degC(700) "Hot tank starting temperature";
 
 	parameter Real tnk_fr = 0.01 "Tank loss fraction of tank in one day at design point";
 	parameter SI.Temperature tnk_T_amb_des = 298.15 "Ambient temperature at design point";
 
 	// Power block
-	parameter SI.Power P_gro(fixed = if fixed_field then false else true) = 120.0e06 "Power block gross rating at design";
+	parameter SI.Power P_gro(fixed = if fixed_field then false else true) = 120.0e06 "Power block gross rating at design point";
 
 	parameter SI.Efficiency eff_adj = 0.9 "Adjustment factor for power block efficiency";
 	parameter SI.Efficiency eff_cyc = 0.5 "Estimate of overall power block efficiency";
@@ -95,34 +93,34 @@ model SimpleParticleSystem
 	parameter Real par_ca[:] = {1, 0.0025} "Power block parasitics coefficients"; //TODO: Update the values for a sCO2 cycle
 
 	// Calculated Parameters
-	parameter SI.HeatFlowRate Q_flow_des = if fixed_field then (if match_sam then R_des/((1 + rec_fr)*SM) else R_des*(1 - rec_fr) / SM) else P_gro/eff_cyc "Heat to power block at design";
+	parameter SI.HeatFlowRate Q_flow_des = if fixed_field then (if match_sam then R_des/((1 + rec_fr)*SM) else R_des*(1 - rec_fr) / SM) else P_gro/eff_cyc "Heat to power block at design point";
 
 	parameter SI.Energy E_max = t_storage*3600*Q_flow_des "Maximum tank stored energy";
 	parameter SI.SpecificHeatCapacity cp_set =
 		SolarTherm.Media.SolidParticles.CarboHSP_utilities.cp_T((T_cold_set + T_hot_set)/2)
 		"Particles average specific heat capacity";
-	parameter SI.Mass m_max = E_max/(cp_set*(T_hot_set - T_cold_set)) "Max mass in tanks";
+	parameter SI.Mass m_max = E_max/(cp_set*(T_hot_set - T_cold_set)) "Max particle mass in tank";
 
-	parameter SI.Area A_col = (R_des/eff_opt)/dni_des "Field area";
+	parameter SI.Area A_field = (R_des/eff_opt)/dni_des "Heliostat field reflective area";
 
-	parameter SI.Area A_rec = A_col/C "Receiver aperture area";
+	parameter SI.Area A_rec = A_field/C "Receiver aperture area";
 	parameter SI.Length H_rec_a = sqrt(A_rec * ar_rec) "Receiver aperture height";
 	parameter SI.Length W_rec_a = A_rec / H_rec_a "Receiver aperture width";
 
-	parameter SI.Area A_land = land_mult*A_col "Land area";
+	parameter SI.Area A_land = land_mult*A_field "Land area";
 
-	parameter SI.Power P_net = (1 - par_fr)*P_gro "Power block net rating at design";
+	parameter SI.Power P_net = (1 - par_fr)*P_gro "Power block net rating at design point";
 	parameter SI.Power P_name = P_net "Nameplate rating of power block";
 
 	parameter SI.Irradiance dni_go = 500 "Minimum DNI to start the receiver";
 
-	parameter SI.MassFlowRate m_flow_fac = SM*Q_flow_des/(cp_set*(T_hot_set - T_cold_set)) "Mass flow rate to receiver at design";
-	parameter SI.MassFlowRate m_flow_blk = Q_flow_des/(cp_set*(T_hot_set - T_cold_set)) "Mass flow rate to power block at design";
+	parameter SI.MassFlowRate m_flow_fac = SM*Q_flow_des/(cp_set*(T_hot_set - T_cold_set)) "Mass flow rate to receiver at design point";
+	parameter SI.MassFlowRate m_flow_blk = Q_flow_des/(cp_set*(T_hot_set - T_cold_set)) "Mass flow rate to power block at design point";
 
 	parameter SI.Mass m_up_warn = 0.85*m_max "Tank full trigger lower bound";
 	parameter SI.Mass m_up_stop = 0.95*m_max "Tank full trigger upper bound";
 
-	parameter Real split_cold = 0.95 "Starting particles fraction in cold tank";
+	parameter Real split_cold = 0.95 "Starting fraction of particle mass in cold tank";
 
 	// Cost data
 	parameter Real r_disc = 0.07 "Discount rate";
@@ -131,7 +129,7 @@ model SimpleParticleSystem
 	parameter Integer t_life(unit="year") = 30 "Lifetime of plant";
 	parameter Integer t_cons(unit="year") = 2 "Years of construction";
 
-	parameter Real r_cur = 0.71 "The currency rate from AUD to USD"; // Valid for 2019. See https://www.rba.gov.au/
+	parameter Real r_cur = 0.71 "The currency rate from AUD to USD"; // Valid for 2019. See https://www.rba.gov.au/ //TODO USD vs AUD not implemented
 	parameter Real r_contg = 1.1 "Contingency rate";
 
 	parameter FI.AreaPrice pri_field = 75 "Field cost per design aperture area";
@@ -151,8 +149,8 @@ model SimpleParticleSystem
 	parameter Real pri_om_prod(unit="$/J/year") = 3.5/(1e6*3600)
 	"O&M cost per production per year";
 
-	parameter FI.Money C_field = A_col * pri_field "Field cost";
-	parameter FI.Money C_site = A_col * pri_site "Site improvements cost";
+	parameter FI.Money C_field = A_field * pri_field "Field cost";
+	parameter FI.Money C_site = A_field * pri_site "Site improvements cost";
 	parameter FI.Money C_tower = 0 "Tower cost"; //TODO: add the cost function i.e. C_tower = pri_tower * (H_tower ^ idx_pri_tower)
 	parameter FI.Money C_lift = 0 "Lifts cost"; //TODO: add the cost function i.e. C_lift = pri_lift * height_des * m_flow_des
 	parameter FI.Money C_receiver = 97.77 * (R_des/1000.) "Receiver cost"; // NOTE: includes fpr, tower and receiver lift all together!
@@ -179,7 +177,7 @@ model SimpleParticleSystem
 		redeclare model OptEff=SolarTherm.Models.CSP.CRS.HeliostatsField.FileOE(
 			angles=angles, file=opt_file),
 		orient_north=wea.orient_north,
-		A=A_col,
+		A=A_field,
 		t_con_on_delay=0,
 		t_con_off_delay=0,
 		ramp_order=1,
@@ -247,6 +245,14 @@ model SimpleParticleSystem
 		cf=par_cf,
 		ca=par_ca);
 
+	SolarTherm.Models.Sources.Schedule.Scheduler sch(
+		file = sch_file,
+		ndaily = 8,
+		wmap = {{7, 7, 7, 7, 7, 7, 7}},
+		mmap = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}) if not const_dispatch "Fixed dispatch schedule"; // TODO The schedule file content needs to be updated for this plant accordingly.
+
+	SolarTherm.Models.Analysis.Performance per(schedule = true, pri_file = pri_file) "Plant energy/revenue calculator";
+
 	SolarTherm.Models.Control.Trigger hf_trig(
 		low=m_up_warn,
 		up=m_up_stop,
@@ -256,13 +262,12 @@ model SimpleParticleSystem
 		up=m_up_stop,
 		y_0=true);
 
-	SolarTherm.Models.Analysis.Finances.SpotPriceTable pri(file=pri_file);
-
 	// Variables
 	Boolean radiance_good "Adequate radiant power on receiver";
 	Boolean fill_htnk "Hot tank can be filled";
 	Boolean fill_ctnk "Cold tank can be filled";
 
+	Real sched;
 	SI.Power P_elec(displayUnit="MW");
 	FI.Money R_spot(start=0, fixed=true) "Spot market revenue";
 	SI.Energy E_elec(start=0, fixed=true) "Generate electricity";
@@ -306,7 +311,7 @@ equation
 	RC.door_open = radiance_good;
 
 	if radiance_good and fill_htnk then
-		lift_rec.m_flow_set = m_flow_fac*sum(RC.R)/(eff_opt*A_col*1000);
+		lift_rec.m_flow_set = m_flow_fac*sum(RC.R)/(eff_opt*A_field*1000);
 		CL.defocus = false;
 		CL.R_dfc = 0;
 	elseif radiance_good and not fill_htnk then
@@ -324,7 +329,17 @@ equation
 	CL.track = true;
 
 	P_elec = PB.P - (par.P_par + par_fix_fr*P_net + lift_rec.W + lift_ext.W + lift_stc.W); //TODO: add parasitic losses in the heliostat field and tanks
-	der(E_elec) = P_elec;
-	der(R_spot) = P_elec*pri.price;
+	connect(P_elec, per.P_elec);
+	per.P_sch = sched * P_name;
+	connect(per.E_elec, E_elec);
+	connect(per.R_spot, R_spot);
+
+	if const_dispatch then
+		sched = 1;
+	else
+		connect(wea.wbus, sch.wbus);
+		sched = sch.v;
+	end if;
+
 	annotation(experiment(StartTime=0.0, StopTime=31536000.0, Interval=60, Tolerance=1e-06));
 end SimpleParticleSystem;
