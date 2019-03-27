@@ -11,6 +11,7 @@ model SimpleParticleSystem
 	extends Modelica.Icons.Example;
 
 	//TODO: Update cost data based on SAM's latest version i.e. 2018 version
+	//TODO: Change the initial port_b.h_outflow to h_0 at e.g. 30 degC in storage and reciever model (define state_0)
 
 	// Input Parameters
 	// *********************
@@ -83,7 +84,7 @@ model SimpleParticleSystem
 
 	parameter SI.Efficiency eff_ext = 0.9 "Extractor efficiency";
 
-	parameter Real par_fr = 0.17 "Parasitics fraction of power block rating at design point";
+	parameter Real par_fr = 0.166 "Parasitics fraction of power block rating at design point";
 	parameter Real par_fix_fr = 0.0055 "Fixed parasitics as fraction of net rating";
 
 	parameter SI.Temperature blk_T_amb_des = 298.15 "Ambient temperature at design point";
@@ -98,7 +99,7 @@ model SimpleParticleSystem
 	parameter SI.Energy E_max = t_storage*3600*Q_flow_des "Maximum tank stored energy";
 	parameter SI.SpecificHeatCapacity cp_set =
 		SolarTherm.Media.SolidParticles.CarboHSP_utilities.cp_T((T_cold_set + T_hot_set)/2)
-		"Particles average specific heat capacity";
+		"Particles average specific heat capacity at design point";
 	parameter SI.Mass m_max = E_max/(cp_set*(T_hot_set - T_cold_set)) "Max particle mass in tank";
 
 	parameter SI.Area A_field = (R_des/eff_opt)/dni_des "Heliostat field reflective area";
@@ -120,7 +121,7 @@ model SimpleParticleSystem
 	parameter SI.Mass m_up_warn = 0.85*m_max "Tank full trigger lower bound";
 	parameter SI.Mass m_up_stop = 0.95*m_max "Tank full trigger upper bound";
 
-	parameter Real split_cold = 0.95 "Starting fraction of particle mass in cold tank";
+	parameter Real split_cold = 0.95 "Starting fraction of particle mass in cold storage tank";
 
 	// Cost data
 	parameter Real r_disc = 0.07 "Discount rate";
@@ -170,7 +171,7 @@ model SimpleParticleSystem
 	// *********************
 	SolarTherm.Models.Sources.Weather.WeatherSource wea(
 		file=wea_file,
-		delay=wdelay);
+		delay=wdelay) "Weather data component";
 
 	SolarTherm.Models.CSP.CRS.HeliostatsField.SwitchedCL_2 CL(
 		//redeclare model OptEff=SolarTherm.Models.CSP.CRS.HeliostatsField.IdealIncOE(alt_fixed=45),
@@ -183,14 +184,14 @@ model SimpleParticleSystem
 		ramp_order=1,
 		dni_start=dni_go,
 		dni_stop=dni_go
-		);
+		) "Heliostat field";
 
 	SolarTherm.Models.CSP.CRS.Receivers.PlateRC RC(
 		redeclare package Medium=Medium,
 		A=A_rec,
 		em=em_particle,
 		ab=ab_particle,
-		h_th=h_th_rec); // With all props representing solid particles, PlateRC can be an equivalent of a zero-D particle receiver model
+		h_th=h_th_rec) "Receiver"; // With all props representing solid particles, PlateRC can be an equivalent of a zero-D particle receiver model
 
 	SolarTherm.Models.Fluid.Pumps.ParticleLift lift_rec(
 		redeclare package Medium=Medium,
@@ -198,14 +199,14 @@ model SimpleParticleSystem
 		use_input=true,
 		dh=200,
 		CF=0.5,
-		eff=0.85);
+		eff=0.85) "Receiver lift";
 	SolarTherm.Models.Fluid.Pumps.ParticleLift lift_ext(
 		redeclare package Medium=Medium,
 		cont_m_flow=true,
 		use_input=true,
 		dh=10,
 		CF=0.5,
-		eff=0.85);
+		eff=0.85) "Particle heat exchanger lift";
 
 	SolarTherm.Models.Fluid.Pumps.ParticleLift lift_stc(
 		redeclare package Medium=Medium,
@@ -213,37 +214,37 @@ model SimpleParticleSystem
 		use_input=false,
 		dh=50,
 		CF=0.5,
-		eff=0.85);
+		eff=0.85) "Cold storage tank lift";
 
 	SolarTherm.Models.Storage.Tank.FluidST STC(
 		redeclare package Medium=Medium,
 		m_max=m_max,
 		m_start=m_max*split_cold,
-		T_start=T_cold_start);
+		T_start=T_cold_start) "Cold storage tank";
 
 	SolarTherm.Models.Storage.Tank.FluidST STH(
 		redeclare package Medium=Medium,
 		m_max=m_max,
 		m_start=m_max*(1 - split_cold),
-		T_start=T_hot_start);
+		T_start=T_hot_start) "Hot storage tank";
 
 	SolarTherm.Models.Fluid.HeatExchangers.Extractor ext(
 		redeclare package Medium=Medium,
 		eff = eff_ext,
 		use_input=false,
-		T_fixed=T_cold_set);
+		T_fixed=T_cold_set) "Particle heat exchanger";
 
 	SolarTherm.Models.PowerBlocks.HeatPB PB(
 		redeclare package Medium=Medium,
 		P_rate=P_gro,
-		eff_adj=eff_adj);
+		eff_adj=eff_adj) "Power block";
 
 	SolarTherm.Models.PowerBlocks.GenericParasitics par(
 		P_par_des=par_fr*P_gro,
 		P_gross_des=P_gro,
 		T_amb_des=par_T_amb_des,
 		cf=par_cf,
-		ca=par_ca);
+		ca=par_ca) "Power block parasitics calculator";
 
 	SolarTherm.Models.Sources.Schedule.Scheduler sch(
 		file = sch_file,
@@ -256,21 +257,22 @@ model SimpleParticleSystem
 	SolarTherm.Models.Control.Trigger hf_trig(
 		low=m_up_warn,
 		up=m_up_stop,
-		y_0=true);
+		y_0=true) "Hot storage tank full trigger";
+
 	SolarTherm.Models.Control.Trigger cf_trig(
 		low=m_up_warn,
 		up=m_up_stop,
-		y_0=true);
+		y_0=true) "Cold storage tank full trigger";
 
 	// Variables
 	Boolean radiance_good "Adequate radiant power on receiver";
-	Boolean fill_htnk "Hot tank can be filled";
-	Boolean fill_ctnk "Cold tank can be filled";
+	Boolean fill_htnk "Hot tank can be filled if true";
+	Boolean fill_ctnk "Cold tank can be filled if true";
 
-	Real sched;
-	SI.Power P_elec(displayUnit="MW");
-	FI.Money R_spot(start=0, fixed=true) "Spot market revenue";
-	SI.Energy E_elec(start=0, fixed=true) "Generate electricity";
+	Real sched "Particle disptach flow fraction";
+	SI.Power P_elec(displayUnit="MW") "Generated power";
+	SI.Energy E_elec(displayUnit="MW.h") "Generated electricity";
+	FI.Money R_spot "Spot market revenue";
 
 initial equation
 	if fixed_field then
@@ -284,6 +286,7 @@ equation
 	connect(wea.wbus, RC.wbus);
 	connect(wea.wbus, PB.wbus);
 	connect(wea.wbus, par.wbus);
+
 	connect(CL.R_foc, RC.R);
 	connect(STC.port_b, lift_rec.port_a);
 	connect(lift_rec.port_b, RC.port_a);
@@ -311,7 +314,7 @@ equation
 	RC.door_open = radiance_good;
 
 	if radiance_good and fill_htnk then
-		lift_rec.m_flow_set = m_flow_fac*sum(RC.R)/(eff_opt*A_field*1000);
+		lift_rec.m_flow_set = m_flow_fac*sum(RC.R)/R_des; // TODO: This proportional control should be replaced with a PID feedback controller
 		CL.defocus = false;
 		CL.R_dfc = 0;
 	elseif radiance_good and not fill_htnk then
