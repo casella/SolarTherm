@@ -41,7 +41,7 @@ model SimpleParticleSystem
 	parameter String opt_file = Modelica.Utilities.Files.loadResource("modelica://SolarTherm/Data/Optics/g3p3_opt_eff.motab") "Optical efficiency file";
 	parameter Solar_angles angles = Solar_angles.ele_azi "Angles used in the optical efficiency lookup table file";
 
-	parameter SI.Efficiency eff_opt = 0.48 "Average annual field optical efficiency";
+	parameter SI.Efficiency eff_opt = 0.42 "Average annual field optical efficiency at design point";
 	parameter SI.Irradiance dni_des = 1000 "DNI at design point";
 	parameter Real C = 1200 "Concentration ratio";
 
@@ -82,7 +82,7 @@ model SimpleParticleSystem
 	parameter SI.Efficiency eff_adj = 0.9 "Adjustment factor for power block efficiency";
 	parameter SI.Efficiency eff_cyc = 0.5 "Estimate of overall power block efficiency";
 
-	parameter SI.Efficiency eff_ext = 0.9 "Extractor efficiency";
+	parameter SI.Efficiency eff_ext = 0.98 "Extractor efficiency";
 
 	parameter Real par_fr = 0.166 "Parasitics fraction of power block rating at design point";
 	parameter Real par_fix_fr = 0.0055 "Fixed parasitics as fraction of net rating";
@@ -122,6 +122,8 @@ model SimpleParticleSystem
 	parameter SI.Mass m_up_stop = 0.95*m_max "Tank full trigger upper bound";
 
 	parameter Real split_cold = 0.95 "Starting fraction of particle mass in cold storage tank";
+
+	parameter Real Kp = 0.87 "Proportional gain value";
 
 	// Cost data
 	parameter Real r_disc = 0.07 "Discount rate";
@@ -264,6 +266,8 @@ model SimpleParticleSystem
 		up=m_up_stop,
 		y_0=true) "Cold storage tank full trigger";
 
+	Modelica.Blocks.Math.Gain P(k=Kp) "Proportional gain";
+
 	// Variables
 	Boolean radiance_good "Adequate radiant power on receiver";
 	Boolean fill_htnk "Hot tank can be filled if true";
@@ -313,8 +317,10 @@ equation
 
 	RC.door_open = radiance_good;
 
+	P.u = m_flow_fac;
+
 	if radiance_good and fill_htnk then
-		lift_rec.m_flow_set = m_flow_fac*sum(RC.R)/R_des; // TODO: This proportional control should be replaced with a PID feedback controller
+		lift_rec.m_flow_set = P.y*sum(RC.R)/R_des; // TODO: This proportional control should be replaced with a PID feedback controller
 		CL.defocus = false;
 		CL.R_dfc = 0;
 	elseif radiance_good and not fill_htnk then
