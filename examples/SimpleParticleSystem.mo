@@ -41,11 +41,11 @@ model SimpleParticleSystem
 	parameter String opt_file = Modelica.Utilities.Files.loadResource("modelica://SolarTherm/Data/Optics/g3p3_opt_eff.motab") "Optical efficiency file";
 	parameter Solar_angles angles = Solar_angles.ele_azi "Angles used in the optical efficiency lookup table file";
 
-	parameter SI.Efficiency eff_opt = 0.42 "Average annual field optical efficiency at design point";
+	parameter SI.Efficiency eff_opt = 0.5 "Average annual field optical efficiency at design point";
 	parameter SI.Irradiance dni_des = 1000 "DNI at design point";
 	parameter Real C = 1200 "Concentration ratio";
 
-	parameter SI.Length H_tower = 200 "Tower height";
+	parameter SI.Length H_tower = 258 "Tower height";
 	parameter SI.Diameter D_tower = 30 "Tower diameter";
 
 	parameter Real SM = 2.5 "Solar multiple";
