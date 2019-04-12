@@ -12,6 +12,9 @@ model SimpleParticleSystem
 
 	//TODO: Update cost data based on SAM's latest version i.e. 2018 version
 	//TODO: Change the initial port_b.h_outflow to h_0 at e.g. 30 degC in storage and reciever model (define state_0)
+	//TODO: add ne_trig and nc_trig
+	//TODO: add PB warmup delay, and heat-up feature if hot tanl level is less than 3 hours.
+	//TODO: add max wind cut-off at solar field
 
 	// Input Parameters
 	// *********************
@@ -42,22 +45,24 @@ model SimpleParticleSystem
 	parameter Solar_angles angles = Solar_angles.ele_azi "Angles used in the optical efficiency lookup table file";
 
 	parameter SI.Efficiency eff_opt = 0.5 "Average annual field optical efficiency at design point";
-	parameter SI.Irradiance dni_des = 1000 "DNI at design point";
+	parameter SI.Irradiance dni_des = 788.8 "DNI at design point";
 	parameter Real C = 1200 "Concentration ratio";
 
 	parameter SI.Length H_tower = 258 "Tower height";
 	parameter SI.Diameter D_tower = 30 "Tower diameter";
 
 	parameter Real SM = 2.5 "Solar multiple";
-	parameter Real land_mult = 1.0 "Land area multiplier";
+	parameter Real land_mult = 0 "Land area multiplier";
 
 	// Receiver
 	parameter Real ar_rec = 1.0 "Height to width aspect ratio of receiver aperture";
 
-	parameter Real em_particle = 0.86 "Emissivity of reciever";
-	parameter Real ab_particle = 0.93 "Absorptivity of reciever";
+	parameter Real em_particle = 0.86 "Emissivity of particles";
+	parameter Real em_curtain = 0.86 "Emissivity of curtain";
+	parameter Real ab_particle = 0.93 "Absorptivity of particles";
+	parameter Real ab_curtain = 0.98 "Absorptivity of curtain";
 
-	parameter SI.CoefficientOfHeatTransfer h_th_rec = 5 "Receiver heat tranfer coefficient"; //TODO back calc this based on rec_fr and knowing radiation losses at design. Note for convection you need to calc equivalent surface area not A_aper
+	parameter SI.CoefficientOfHeatTransfer h_th_rec = 80 "Receiver heat tranfer coefficient"; //TODO back calc this based on rec_fr and knowing radiation losses at design. Note for convection you need to calc equivalent surface area not A_aper
 
 	parameter SI.RadiantPower R_des(fixed= if fixed_field then true else false) "Input power to receiver at design point";
 
@@ -67,25 +72,25 @@ model SimpleParticleSystem
 	// Storage
 	parameter Real t_storage(unit="h") = 14 "Hours of storage";
 
-	parameter Medium.Temperature T_cold_set = CV.from_degC(550) "Target cold tank temperature";
-	parameter Medium.Temperature T_hot_set = CV.from_degC(700) "Target hot tank temperature";
+	parameter Medium.Temperature T_cold_set = CV.from_degC(580.3) "Target cold tank temperature";
+	parameter Medium.Temperature T_hot_set = CV.from_degC(800) "Target hot tank temperature";
 
-	parameter Medium.Temperature T_cold_start = CV.from_degC(550) "Cold tank starting temperature";
-	parameter Medium.Temperature T_hot_start = CV.from_degC(700) "Hot tank starting temperature";
+	parameter Medium.Temperature T_cold_start = CV.from_degC(580.3) "Cold tank starting temperature";
+	parameter Medium.Temperature T_hot_start = CV.from_degC(800) "Hot tank starting temperature";
 
 	parameter Real tnk_fr = 0.01 "Tank loss fraction of tank in one day at design point";
 	parameter SI.Temperature tnk_T_amb_des = 298.15 "Ambient temperature at design point";
 
 	// Power block
-	parameter SI.Power P_gro(fixed = if fixed_field then false else true) = 120.0e06 "Power block gross rating at design point";
+	parameter SI.Power P_gro(fixed = if fixed_field then false else true) = 100.0e06 "Power block gross rating at design point"; //120.0e06
 
 	parameter SI.Efficiency eff_adj = 0.9 "Adjustment factor for power block efficiency";
-	parameter SI.Efficiency eff_cyc = 0.5 "Estimate of overall power block efficiency";
+	parameter SI.Efficiency eff_cyc = 0.502 "Estimate of overall power block efficiency";
 
 	parameter SI.Efficiency eff_ext = 0.98 "Extractor efficiency";
 
-	parameter Real par_fr = 0.166 "Parasitics fraction of power block rating at design point";
-	parameter Real par_fix_fr = 0.0055 "Fixed parasitics as fraction of net rating";
+	parameter Real par_fr = 0 "Parasitics fraction of power block rating at design point"; // 0.166
+	parameter Real par_fix_fr = 0 "Fixed parasitics as fraction of net rating"; //0.0055
 
 	parameter SI.Temperature blk_T_amb_des = 298.15 "Ambient temperature at design point";
 	parameter SI.Temperature par_T_amb_des = 298.15 "Ambient temperature at design point";
@@ -104,7 +109,9 @@ model SimpleParticleSystem
 
 	parameter SI.Area A_field = (R_des/eff_opt)/dni_des "Heliostat field reflective area";
 
-	parameter SI.Area A_rec = A_field/C "Receiver aperture area";
+	parameter SI.Area A_rec = 629.8 "Receiver aperture area";
+	//parameter SI.Area A_rec = A_field/C "Receiver aperture area";
+
 	parameter SI.Length H_rec_a = sqrt(A_rec * ar_rec) "Receiver aperture height";
 	parameter SI.Length W_rec_a = A_rec / H_rec_a "Receiver aperture width";
 
@@ -113,27 +120,35 @@ model SimpleParticleSystem
 	parameter SI.Power P_net = (1 - par_fr)*P_gro "Power block net rating at design point";
 	parameter SI.Power P_name = P_net "Nameplate rating of power block";
 
-	parameter SI.Irradiance dni_go = 500 "Minimum DNI to start the receiver";
+	parameter SI.Irradiance dni_start = 500 "DNI above which concentrator start";
+	parameter SI.Irradiance dni_stop = 500 "DNI below which concentrator stops";
+
+	parameter SI.Velocity wspd_stop = 7.0 "Wind speed above which concentrator stops";
 
 	parameter SI.MassFlowRate m_flow_fac = SM*Q_flow_des/(cp_set*(T_hot_set - T_cold_set)) "Mass flow rate to receiver at design point";
 	parameter SI.MassFlowRate m_flow_blk = Q_flow_des/(cp_set*(T_hot_set - T_cold_set)) "Mass flow rate to power block at design point";
 
-	parameter SI.Mass m_up_warn = 0.85*m_max "Tank full trigger lower bound";
-	parameter SI.Mass m_up_stop = 0.95*m_max "Tank full trigger upper bound";
+	parameter SI.Mass tnk_full_lb = 0.9*m_max "Tanks full trigger lower bound";
+	parameter SI.Mass tnk_full_ub = 0.95*m_max "Tanks full trigger upper bound";
+
+	parameter SI.Mass tnk_empty_lb = 0.05*m_max "Hot tank empty trigger lower bound"; // 3 hours in EES
+	parameter SI.Mass tnk_empty_ub = 0.07*m_max "Hot tank empty trigger upper bound";
 
 	parameter Real split_cold = 0.95 "Starting fraction of particle mass in cold storage tank";
 
-	parameter Real Kp = 0.87 "Proportional gain value";
+	parameter Real Kp = 1.0 "Proportional gain value";
 
 	// Cost data
-	parameter Real r_disc = 0.07 "Discount rate";
+	parameter Real r_disc = 0.0439 "Real discount rate";
 	parameter Real r_i = 0.03 "Inflation rate";
 
 	parameter Integer t_life(unit="year") = 30 "Lifetime of plant";
 	parameter Integer t_cons(unit="year") = 2 "Years of construction";
 
 	parameter Real r_cur = 0.71 "The currency rate from AUD to USD"; // Valid for 2019. See https://www.rba.gov.au/ //TODO USD vs AUD not implemented
-	parameter Real r_contg = 1.1 "Contingency rate";
+	parameter Real r_contg = 0.1 "Contingency rate";
+	parameter Real r_indirect = 0.13 "Indirect capital costs rate";
+	parameter Real r_cons = 0.06 "Construction cost rate";
 
 	parameter FI.AreaPrice pri_field = 75 "Field cost per design aperture area";
 	parameter FI.AreaPrice pri_site = 10 "Site improvements cost per area";
@@ -156,15 +171,15 @@ model SimpleParticleSystem
 	parameter FI.Money C_site = A_field * pri_site "Site improvements cost";
 	parameter FI.Money C_tower = 0 "Tower cost"; //TODO: add the cost function i.e. C_tower = pri_tower * (H_tower ^ idx_pri_tower)
 	parameter FI.Money C_lift = 0 "Lifts cost"; //TODO: add the cost function i.e. C_lift = pri_lift * height_des * m_flow_des
-	parameter FI.Money C_receiver = 97.77 * (R_des/1000.) "Receiver cost"; // NOTE: includes fpr, tower and receiver lift all together!
+	parameter FI.Money C_receiver = 97.77 * ((SM*Q_flow_des)/1000.) "Receiver cost"; // NOTE: includes fpr, tower and receiver lift all together!
 		//TODO: add the cost function i.e. C_receiver = pri_receiver * A_rec
 	parameter FI.Money C_storage = (m_max*cp_set*(T_hot_set - T_cold_set)) * pri_storage "Storage cost"; //TODO: add the cost function based on Eq. 7 to iclude the cost of lift
 	parameter FI.Money C_extractor = Q_flow_des * pri_extractor "Heat exchanger cost";
 	parameter FI.Money C_block = P_gro * pri_block "Power block cost";
 	parameter FI.Money C_bop = 0 "Balance of plant cost"; // TODO: to be replaced with (P_gro * pri_bop)
-	parameter FI.Money C_land = 0 "Land cost"; // TODO: to be replaced with (A_land * pri_land)
+	parameter FI.Money C_land = A_land * pri_land "Land cost";
 
-	parameter FI.Money C_cap = (C_field + C_site + C_tower + C_lift + C_receiver + C_storage + C_extractor + C_block + C_bop) * r_contg + C_land "Capital costs";
+	parameter FI.Money C_cap = ((C_field + C_site + C_tower + C_lift + C_receiver + C_storage + C_extractor + C_block + C_bop) * (1+r_contg)) * (1+r_indirect) * (1+r_cons) + C_land "Capital costs";
 
 	parameter FI.MoneyPerYear C_year = P_name * pri_om_name "Cost per year";
 	parameter Real C_prod(unit="$/J/year") = 0 "Cost per production per year"; //TODO: to be replaced with pri_om_prod
@@ -184,15 +199,15 @@ model SimpleParticleSystem
 		t_con_on_delay=0,
 		t_con_off_delay=0,
 		ramp_order=1,
-		dni_start=dni_go,
-		dni_stop=dni_go
+		dni_start=dni_start,
+		dni_stop=dni_stop
 		) "Heliostat field";
 
 	SolarTherm.Models.CSP.CRS.Receivers.PlateRC RC(
 		redeclare package Medium=Medium,
 		A=A_rec,
-		em=em_particle,
-		ab=ab_particle,
+		em=em_curtain,
+		ab=ab_curtain,
 		h_th=h_th_rec) "Receiver"; // With all props representing solid particles, PlateRC can be an equivalent of a zero-D particle receiver model
 
 	SolarTherm.Models.Fluid.Pumps.ParticleLift lift_rec(
@@ -200,23 +215,23 @@ model SimpleParticleSystem
 		cont_m_flow=true,
 		use_input=true,
 		dh=200,
-		CF=0.5,
-		eff=0.85) "Receiver lift";
+		CF=0,
+		eff=0.8) "Receiver lift";
 	SolarTherm.Models.Fluid.Pumps.ParticleLift lift_ext(
 		redeclare package Medium=Medium,
 		cont_m_flow=true,
 		use_input=true,
 		dh=10,
-		CF=0.5,
-		eff=0.85) "Particle heat exchanger lift";
+		CF=0,
+		eff=0.8) "Particle heat exchanger lift";
 
 	SolarTherm.Models.Fluid.Pumps.ParticleLift lift_stc(
 		redeclare package Medium=Medium,
 		cont_m_flow=false,
 		use_input=false,
 		dh=50,
-		CF=0.5,
-		eff=0.85) "Cold storage tank lift";
+		CF=0,
+		eff=0.8) "Cold storage tank lift";
 
 	SolarTherm.Models.Storage.Tank.FluidST STC(
 		redeclare package Medium=Medium,
@@ -257,21 +272,27 @@ model SimpleParticleSystem
 	SolarTherm.Models.Analysis.Performance per(schedule = true, pri_file = pri_file) "Plant energy/revenue calculator";
 
 	SolarTherm.Models.Control.Trigger hf_trig(
-		low=m_up_warn,
-		up=m_up_stop,
+		low=tnk_full_lb,
+		up=tnk_full_ub,
 		y_0=true) "Hot storage tank full trigger";
 
 	SolarTherm.Models.Control.Trigger cf_trig(
-		low=m_up_warn,
-		up=m_up_stop,
+		low=tnk_full_lb,
+		up=tnk_full_ub,
 		y_0=true) "Cold storage tank full trigger";
 
-	Modelica.Blocks.Math.Gain P(k=Kp) "Proportional gain";
+	SolarTherm.Models.Control.Trigger hne_trig(
+		low=tnk_empty_lb,
+		up=tnk_empty_ub,
+		y_0=false) "Hot storage tank not empty (nominal) trigger";
+
+	Modelica.Blocks.Math.Gain P(k=Kp) "Proportional gain for receiver temperature";
 
 	// Variables
 	Boolean radiance_good "Adequate radiant power on receiver";
 	Boolean fill_htnk "Hot tank can be filled if true";
 	Boolean fill_ctnk "Cold tank can be filled if true";
+	Boolean empty_htnk "True if hot tank empty";
 
 	Real sched "Particle disptach flow fraction";
 	SI.Power P_elec(displayUnit="MW") "Generated power";
@@ -309,11 +330,13 @@ equation
 
 	connect(hf_trig.x, STH.m);
 	connect(cf_trig.x, STC.m);
+	connect(hne_trig.x, STH.m);
 
-	radiance_good = wea.wbus.dni >= dni_go;
+	radiance_good = wea.wbus.dni >= dni_start;
 
 	fill_htnk = not hf_trig.y;
 	fill_ctnk = not cf_trig.y;
+	empty_htnk = not hne_trig.y;
 
 	RC.door_open = radiance_good;
 
@@ -333,7 +356,7 @@ equation
 		CL.R_dfc = 0;
 	end if;
 
-	lift_ext.m_flow_set = if fill_ctnk then m_flow_blk else 0;
+	lift_ext.m_flow_set = if fill_ctnk and not empty_htnk then m_flow_blk else 0;
 
 	CL.track = true;
 
