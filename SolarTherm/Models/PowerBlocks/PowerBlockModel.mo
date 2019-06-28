@@ -36,7 +36,12 @@ model PowerBlockModel
      SolarTherm.Models.PowerBlocks.Correlation.Rankine constrainedby
     SolarTherm.Models.PowerBlocks.Correlation.Cycle
     annotation (Dialog(group="Regresion"),choicesAllMatching=true);
-  Cycle cycle(T_ND=T_ND);
+  Cycle cycle(T_in=T_in,load=load,final T_in_ref=T_in_ref);
+  replaceable model Cooling = SolarTherm.Models.PowerBlocks.Cooling.NoCooling constrainedby
+    SolarTherm.Models.PowerBlocks.Cooling.Cooling
+    annotation (Dialog(group="Cooling losses",enable = enable_losses),
+      choicesAllMatching=true);
+  Cooling cool(T_amb=T_amb_internal);
   Real load;
   SI.HeatFlowRate W_gross "Parasitic losses power";
   SI.HeatFlowRate W_loss "Parasitic losses power";
@@ -58,13 +63,10 @@ protected
   Modelica.Blocks.Interfaces.RealInput parasities_internal;
   Real k_q;
   Real k_w;
-    SI.SpecificEnthalpy h_in;
+  SI.SpecificEnthalpy h_in;
   SI.SpecificEnthalpy h_out;
   parameter SI.MassFlowRate m_flow_ref= Q_flow_ref/(h_in_ref-h_out_ref);
 
-  parameter SI.Temperature Tsat_ref=Modelica.Media.Water.IF97_Utilities.BaseIF97.Basic.tsat(p_bo);
-
-  Real T_ND;
   Medium.ThermodynamicState state_in=Medium.setState_phX(fluid_a.p,inStream(fluid_a.h_outflow));
   Medium.ThermodynamicState state_out=Medium.setState_phX(fluid_a.p,h_out);
   parameter Medium.ThermodynamicState state_in_ref=Medium.setState_pTX(1e5,T_in_ref);
@@ -73,7 +75,6 @@ protected
   parameter SI.SpecificEnthalpy h_out_ref=Medium.specificEnthalpy(state_out_ref);
 
   //parameter SI.MassFlowRate m_flow_min= nu_minm_flow_ref*nu_min;
-  Real nu_cool;
 
   Modelica.Blocks.Interfaces.RealInput T_amb_internal;
 
@@ -91,18 +92,14 @@ equation
     parasities_internal=0;
   end if;
 
-  //cycle.T_ND=T_ND;
-
   logic=load>nu_min;
-  T_ND=(T_in-Tsat_ref)/(T_in_ref-Tsat_ref);
   h_in=inStream(fluid_a.h_outflow);
   h_out=fluid_b.h_outflow;
   h_out=fluid_a.h_outflow;
   fluid_a.m_flow+fluid_b.m_flow=0;
   fluid_a.p=fluid_b.p;
-  nu_cool=1+0.075*(T_des-T_amb_internal)/20;
 
-  load=max(nu_eps,fluid_a.m_flow/m_flow_ref);//load=1 if it is no able partial load
+  load=max(nu_eps,fluid_a.m_flow/m_flow_ref); //load=1 if it is no able partial load
 
   if logic then
     k_q=cycle.k_q;
@@ -114,8 +111,8 @@ equation
     h_out=h_out_ref;
   end if;
 
-  Q_flow/(Q_flow_ref*load)=k_q;
-  W_gross/(nu_cool*W_des*load)=k_w;
+  Q_flow/(cool.nu_q*Q_flow_ref*load)=k_q;
+  W_gross/(cool.nu_w*W_des*load)=k_w;
 
   der(E_gross)=W_gross;
   der(E_net)=W_net;

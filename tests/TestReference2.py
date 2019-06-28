@@ -10,7 +10,7 @@ from math import pi
 
 class TestScheduler(unittest.TestCase):
 	def setUp(self):
-		fn = '../examples/Reference_1.mo'
+		fn = '../examples/Reference_2.mo'
 		sim = simulation.Simulator(fn)
 		sim.compile_model()
 		sim.compile_sim(args=['-s'])
@@ -22,9 +22,9 @@ class TestScheduler(unittest.TestCase):
 		# Note these are set to the values for what is thought to be a working
 		# version.  They are not validated against anything or independently
 		# calculated.
-		self.assertAlmostEqual(self.perf[0], 430309.98, 2) # epy
-		self.assertAlmostEqual(self.perf[1], 147.28, 2) # LCOE
-		self.assertAlmostEqual(self.perf[2], 49.12, 2) # Capacity factor
+		self.assertAlmostEqual(self.perf[0], 429989.69, 2) # epy
+		self.assertAlmostEqual(self.perf[1], 147.39, 2) # LCOE
+		self.assertAlmostEqual(self.perf[2], 49.09, 2) # Capacity factor
 		print(self.perf);
 
 if __name__ == '__main__':
