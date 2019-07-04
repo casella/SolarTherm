@@ -14,6 +14,8 @@ Reference_2
 Reference_2*.[ch]
 SaltSCO2System
 SaltSCO2System*.[ch]
+PhysicalParticleSystem
+PhysicalParticleSystem*.[ch]
 ASTRI100
 ASTRI100*.[cho]
 EnergySystem
