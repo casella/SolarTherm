@@ -41,7 +41,7 @@ model SimpleParticleSystem
 	parameter String sch_file = Modelica.Utilities.Files.loadResource("modelica://SolarTherm/Data/Schedules/daily_sch_0.motab") if not const_dispatch "Discharging schedule from a file";
 
 	// Field
-	parameter String opt_file = Modelica.Utilities.Files.loadResource("modelica://SolarTherm/Data/Optics/g3p3_opt_eff.motab") "Optical efficiency file";
+	parameter String opt_file = Modelica.Utilities.Files.loadResource("modelica://SolarTherm/Data/Optics/g3p3_opt_eff_1.motab") "Optical efficiency file";
 	parameter Solar_angles angles = Solar_angles.ele_azi "Angles used in the optical efficiency lookup table file";
 
 	parameter SI.Efficiency eff_opt = 0.5 "Average annual field optical efficiency at design point";
