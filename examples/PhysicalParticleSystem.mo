@@ -9,12 +9,12 @@ model PhysicalParticleSystem
 	import FI = SolarTherm.Models.Analysis.Finances;
 	import SolarTherm.Types.Solar_angles;
 	import SolarTherm.Types.Currency;
+	import Modelica.Math;
 
 	extends Modelica.Icons.Example;
-	//TODO modify comments wording for particle system terminology
-	//TODO develop and incorporate Modelica HX model
-	//TODO RC reduced model to system-level
-	//TODO debug control/defocusing issue
+	//TODO Incorporate Modelica HX model
+	//TODO Use Coolprop for SCO2 props
+	//TODO Re-train the sCO2 cycle for the particle medium and new setpoint temperatures
 
 	// Input Parameters
 	// *********************
@@ -22,6 +22,7 @@ model PhysicalParticleSystem
 	parameter Boolean fixed_field = false "true if the size of the solar field is fixed";
 
 	replaceable package Medium = SolarTherm.Media.SolidParticles.CarboHSP_ph "Medium props for Carbo HSP 40/70";
+	//TODO add a new medium for sCO2
 
 	parameter String pri_file = Modelica.Utilities.Files.loadResource("modelica://SolarTherm/Data/Prices/aemo_vic_2014.motab") "Electricity price file";
 	parameter Currency currency = Currency.USD "Currency used for cost analysis";
@@ -33,24 +34,24 @@ model PhysicalParticleSystem
 	parameter String wea_file = Modelica.Utilities.Files.loadResource("modelica://SolarTherm/Data/Weather/gen3p3_Daggett_TMY3.motab");
 	parameter Real wdelay[8] = {1800,1800,0,0,0,0,0,0} "Weather file delays";
 
-	parameter nSI.Angle_deg lon = 133.889 "Longitude (+ve East)";
-	parameter nSI.Angle_deg lat = -23.795 "Latitude (+ve North)";
-	parameter nSI.Time_hour t_zone = 9.5 "Local time zone (UCT=0)";
+	parameter nSI.Angle_deg lon = -116.800 "Longitude (+ve East)";
+	parameter nSI.Angle_deg lat = 34.850 "Latitude (+ve North)";
+	parameter nSI.Time_hour t_zone = -8 "Local time zone (UCT=0)";
 	parameter Integer year = 1996 "Meteorological year";
 
 	// Field
 	parameter String opt_file = Modelica.Utilities.Files.loadResource("modelica://SolarTherm/Data/Optics/g3p3_opt_eff_2.motab");
 	parameter Solar_angles angles = Solar_angles.ele_azi "Angles used in the lookup table file";
 
-	parameter Real SM = 1.8 "Solar multiple";
+	parameter Real SM = 2.5 "Solar multiple";
 	parameter Real land_mult = 0 "Land area multiplier";
 
 	parameter Boolean polar = true "True for polar field layout, otherwise surrounded";
 	parameter SI.Area A_heliostat = 100 "Heliostat module reflective area";
 	parameter Real he_av_design = 0.99 "Helisotats availability";
 
-	parameter SI.Efficiency eff_opt = 0.6389 "Field optical efficiency at design point";
-	parameter SI.Irradiance dni_des = 950 "DNI at design point";
+	parameter SI.Efficiency eff_opt = 0.5565 "Field optical efficiency at design point";
+	parameter SI.Irradiance dni_des = 788.8 "DNI at design point";
 	parameter Real C = 1200 "Concentration ratio";
 
 	parameter Real gnd_cvge = 0.3126 "Ground coverage";
@@ -89,8 +90,8 @@ model PhysicalParticleSystem
 	parameter SI.Temperature T_cold_aux_set = CV.from_degC(500) "Cold tank auxiliary heater set-point temperature";
 	parameter SI.Temperature T_hot_aux_set = CV.from_degC(700) "Hot tank auxiliary heater set-point temperature";
 
-	parameter Medium.ThermodynamicState state_cold_set = Medium.setState_pTX(Medium.p_default, T_cold_set) "Cold salt thermodynamic state at design";
-	parameter Medium.ThermodynamicState state_hot_set = Medium.setState_pTX(Medium.p_default, T_hot_set) "Hold salt thermodynamic state at design";
+	parameter Medium.ThermodynamicState state_cold_set = Medium.setState_pTX(Medium.p_default, T_cold_set) "Cold partilces thermodynamic state at design";
+	parameter Medium.ThermodynamicState state_hot_set = Medium.setState_pTX(Medium.p_default, T_hot_set) "Hot partilces thermodynamic state at design";
 
 	parameter Real tnk_fr = 0.01 "Tank loss fraction of tank in one day at design point";
 	parameter SI.Temperature tnk_T_amb_des = 298.15 "Ambient temperature at design point";
@@ -107,6 +108,10 @@ model PhysicalParticleSystem
 
 	parameter Real tank_ar = 2 "storage aspect ratio";
 
+	// Particle heat exchanger
+	parameter SI.CoefficientOfHeatTransfer U_hx = 450 "Particle heat tranfer coefficient of the particle heat exchanger";
+	parameter SI.Temperature dT_approach_hx = 15 "Particle heat exchanger approach temperature";
+
 	// Power block
 	replaceable model Cycle = Models.PowerBlocks.Correlation.sCO2 "sCO2 cycle regression model";
 	parameter SI.Temperature T_comp_in = 318.15 "Compressor inlet temperature at design";
@@ -119,11 +124,11 @@ model PhysicalParticleSystem
 	parameter Real par_fr = 0 "Parasitics fraction of power block rating at design point";
 	parameter Real par_fix_fr = 0 "Fixed parasitics as fraction of gross rating";
 
-	parameter Boolean blk_enable_losses = true "true if the power heat loss calculation is enabled";
+	parameter Boolean blk_enable_losses = true "True if the power heat loss calculation is enabled";
 
-	parameter Boolean external_parasities = true "true if there is external parasitic power losses";
+	parameter Boolean external_parasities = true "True if there is external parasitic power losses";
 
-	parameter Real nu_min_blk = 0.5 "minimum allowed part-load mass flow fraction to power block";
+	parameter Real nu_min_blk = 0.5 "Minimum allowed part-load mass flow fraction to power block";
 	parameter SI.Power W_base_blk = par_fix_fr * P_gross "Power consumed at all times in power block";
 	parameter SI.AbsolutePressure p_blk = 10e6 "Power block operating pressure";
 
@@ -131,22 +136,28 @@ model PhysicalParticleSystem
 	parameter SI.Temperature par_T_amb_des = 298.15 "Ambient temperature at design point";
 
 	parameter Real nu_net_blk = 0.9 "Gross to net power conversion factor at the power block";
-	parameter SI.Temperature T_in_ref_blk = from_degC(800) "HTF inlet temperature to power block at design";
-	parameter SI.Temperature T_out_ref_blk = from_degC(580.3) "HTF outlet temperature to power block at design";
+	parameter SI.Temperature T_in_ref_blk = from_degC(800) "Particle inlet temperature to particle heat exchanger at design";
+	parameter SI.Temperature T_out_ref_blk = from_degC(580.3) "Particle outlet temperature from particle heat exchanger at design";
+
+	parameter SI.Temperature T_in_ref_co2 = CV.from_degC(565.3) "CO2 inlet temperature to particle heat exchanger at design";
+	parameter SI.Temperature T_out_ref_co2 = CV.from_degC(715) "CO2 outlet temperature from particle heat exchanger at design";
+
+	parameter Medium.ThermodynamicState state_co2_in_set = Medium.setState_pTX(Medium.p_default, T_in_ref_co2) "Cold CO2 thermodynamic state at design"; //TODO pressure to be updated as for CO2
+	parameter Medium.ThermodynamicState state_co2_out_set = Medium.setState_pTX(Medium.p_default, T_out_ref_co2) "Hot CO2 thermodynamic state at design"; //TODO pressure to be updated as for CO2
 
 	// Lifts
 	parameter SI.Height dh_liftRC = H_tower "Vertical displacement in receiver lift";
-	parameter SI.Height dh_liftHX = 10 "Vertical displacement in heat exchnager lift";
+	parameter SI.Height dh_liftHX = 10 "Vertical displacement in heat exchanger lift";
 	parameter SI.Height dh_LiftCold = H_storage "Vertical displacement in cold storage lift";
 
-	parameter SI.Efficiency eff_lift = 0.8 "Elevator total efficiency";
+	parameter SI.Efficiency eff_lift = 0.8 "Lift total efficiency";
+
 	// Control
 	parameter SI.Angle ele_min = 0.13962634015955 "Heliostat stow deploy angle";
-	parameter Boolean use_wind = true "true if using wind stopping strategy in the solar field";
-	parameter SI.Velocity Wspd_max = 7 if use_wind "Wind stow speed";
+	parameter Boolean use_wind = true "True if using wind stopping strategy in the solar field";
+	parameter SI.Velocity Wspd_max = 15.65 if use_wind "Wind stow speed";
 
-	parameter SI.HeatFlowRate Q_flow_defocus = Q_flow_des "Solar field thermal power at defocused state";
-	//parameter SI.HeatFlowRate Q_flow_defocus = (199.203e6/((1-0.165)*199.203))*Q_flow_des "Solar field thermal power at defocused state";
+	parameter SI.HeatFlowRate Q_flow_defocus = if match_sam then Q_flow_des*(1 + rec_fr) else Q_flow_des/(1 - rec_fr) "Solar field thermal power at defocused state";
 
 	parameter Real nu_start=0.6 "Minimum energy start-up fraction to start the receiver";
 	parameter Real nu_min_sf=0.3 "Minimum turn-down energy fraction to stop the receiver";
@@ -182,22 +193,27 @@ model PhysicalParticleSystem
 	parameter SI.Length W_receiver = A_receiver / H_receiver "Receiver aperture width";
 	parameter SI.Length L_receiver = 1 "Receiver length(depth)";
 
-	parameter SI.Area A_land = land_mult*A_field + 197434.207385281 "Land area";
+	//parameter SI.Area A_land = land_mult*A_field + 197434.207385281 "Land area";
+	parameter SI.Area A_land = 0 "Land area";
 
-	parameter SI.SpecificEnthalpy h_cold_set = Medium.specificEnthalpy(state_cold_set) "Cold salt specific enthalpy at design";  
-	parameter SI.SpecificEnthalpy h_hot_set = Medium.specificEnthalpy(state_hot_set) "Hot salt specific enthalpy at design";
+	parameter SI.SpecificEnthalpy h_cold_set = Medium.specificEnthalpy(state_cold_set) "Cold particles specific enthalpy at design";  
+	parameter SI.SpecificEnthalpy h_hot_set = Medium.specificEnthalpy(state_hot_set) "Hot particles specific enthalpy at design";
 
-	parameter SI.Density rho_cold_set = Medium.density(state_cold_set) "Cold salt density at design";
-	parameter SI.Density rho_hot_set = Medium.density(state_hot_set) "Hot salt density at design";
+	parameter SI.SpecificEnthalpy h_co2_in_set = Medium.specificEnthalpy(state_co2_in_set) "Cold CO2 specific enthalpy at design";  
+	parameter SI.SpecificEnthalpy h_co2_out_set = Medium.specificEnthalpy(state_co2_out_set) "Hot CO2 specific enthalpy at design";
 
-	parameter SI.Mass m_max = E_max/(h_hot_set - h_cold_set) "Max salt mass in tanks";
-	parameter SI.Volume V_max = m_max/((rho_hot_set + rho_cold_set)/2) "Max salt volume in tanks";
+	parameter SI.Density rho_cold_set = Medium.density(state_cold_set) "Cold particles density at design";
+	parameter SI.Density rho_hot_set = Medium.density(state_hot_set) "Hot particles density at design";
+
+	parameter SI.Mass m_max = E_max/(h_hot_set - h_cold_set) "Max particles mass in tanks";
+	parameter SI.Volume V_max = m_max/((rho_hot_set + rho_cold_set)/2) "Max particles volume in tanks";
 
 	parameter SI.MassFlowRate m_flow_fac = SM*Q_flow_des/(h_hot_set - h_cold_set) "Mass flow rate to receiver at design point";
 	parameter SI.MassFlowRate m_flow_rec_min = 0 "Minimum mass flow rate to receiver";
-	parameter SI.MassFlowRate m_flow_rec_max = 2 * m_flow_fac "Maximum mass flow rate to receiver"; // TODO make 1.2 a gain parameter
-	parameter SI.MassFlowRate m_flow_rec_start = 0.8 * m_flow_fac "Initial or guess value of mass flow rate to receiver in the feedback controller"; // TODO make 0.8 a gain parameter
+	parameter SI.MassFlowRate m_flow_rec_max = 1.3 * m_flow_fac "Maximum mass flow rate to receiver";
+	parameter SI.MassFlowRate m_flow_rec_start = 0.8 * m_flow_fac "Initial or guess value of mass flow rate to receiver in the feedback controller";
 	parameter SI.MassFlowRate m_flow_blk = Q_flow_des/(h_hot_set - h_cold_set) "Mass flow rate to power block at design point";
+	parameter SI.MassFlowRate m_flow_co2 = Q_flow_des/(h_co2_out_set - h_co2_in_set) "Mass flow rate to power block at design point";
 
 	parameter SI.Power P_net = (1 - par_fr)*P_gross "Power block net rating at design point";
 	parameter SI.Power P_name = P_net "Nameplate rating of power block";
@@ -208,6 +224,9 @@ model PhysicalParticleSystem
 
 	parameter SI.Length H_tower = 0.154*(sqrt(twr_ht_const*(A_field/(gnd_cvge*excl_fac))/CN.pi)) "Tower height"; // A_field/(gnd_cvge*excl_fac) is the field gross area
 	parameter SI.Diameter D_tower = W_receiver "Tower diameter"; // That's a fair estimate. An accurate H-to-D correlation may be used.
+
+	parameter SI.TemperatureDifference LMTD_des = ((T_hot_set-T_out_ref_co2)-(T_cold_set-T_in_ref_co2))/(Math.log((T_hot_set-T_out_ref_co2)/(T_cold_set-T_in_ref_co2))) "Particle heat exchnager LMTD at design";
+	parameter SI.Area A_hx = Q_flow_des / (U_hx*LMTD_des) "Heat transfer surface area of the particle heat exchanger";
 
 	// Cost data in USD (default) or AUD
 	parameter Real r_disc = 0.0439 "Real discount rate";
@@ -233,10 +252,12 @@ model PhysicalParticleSystem
 	parameter FI.MassPrice pri_particle = 1.0 "Unit cost of particles per kg";
 	parameter FI.PowerPrice pri_hx = if currency==Currency.USD then (175.90/1e3) else (175.90/1e3)/r_cur "Heat exchnager cost per energy capacity";
 	parameter FI.PowerPrice pri_block = if currency==Currency.USD then 600 / 1e3 else 600/r_cur "Power block cost per gross rated power";
-	parameter FI.PowerPrice pri_bop = if currency==Currency.USD then 0 / 1e3 else (0 / 1e3)/r_cur "Balance of plant cost per gross rated power"; // TODO should be 340 based on downselection criteria
+	//parameter FI.PowerPrice pri_bop = if currency==Currency.USD then 340 / 1e3 else (340 / 1e3)/r_cur "Balance of plant cost per gross rated power"; // Based on downselection criteria criteria
+	parameter FI.PowerPrice pri_bop = if currency==Currency.USD then 0 / 1e3 else (0 / 1e3)/r_cur "Balance of plant cost per gross rated power";
 
 	parameter Real pri_om_name(unit = "$/W/year") = if currency==Currency.USD then 40 / 1e3 else (40 / 1e3)/r_cur "Fixed O&M cost per nameplate per year";
-	parameter Real pri_om_prod(unit = "$/J/year") = if currency==Currency.USD then 0 / (1e6 * 3600) else (0 / (1e6 * 3600))/r_cur "Variable O&M cost per production per year"; // TODO should be 3.5 based on downselection criteria
+	//parameter Real pri_om_prod(unit = "$/J/year") = if currency==Currency.USD then 3.5 / (1e6 * 3600) else (3.5 / (1e6 * 3600))/r_cur "Variable O&M cost per production per year"; // Based on downselection criteria criteria
+	parameter Real pri_om_prod(unit = "$/J/year") = if currency==Currency.USD then 0 / (1e6 * 3600) else (0 / (1e6 * 3600))/r_cur "Variable O&M cost per production per year";
 
 	parameter FI.Money C_field = A_field * pri_field "Field cost";
 	parameter FI.Money C_site = A_field * pri_site "Site improvements cost";
@@ -252,9 +273,9 @@ model PhysicalParticleSystem
 	parameter FI.Money C_bins = FI.particleBinCost(T_hot_set)*SA_storage + FI.particleBinCost(T_cold_set)*SA_storage "Cost of cold and hot storage bins";
 	parameter FI.Money C_particles = (1+NS_particle)*pri_particle*m_max "Cost of particles";
 	parameter FI.Money C_storage = C_bins + C_particles + C_lift_hx + C_lift_cold + (f_loss*t_life*pri_particle*1.753e10) "Total storage cost";
-	parameter FI.Money C_hx = Q_flow_des * pri_hx "Heat exchanger cost";
+	parameter FI.Money C_hx = Q_flow_des * pri_hx "Heat exchanger cost"; // TODO Should be updated based on Eq. 11 in Albrecht et al's ASME conference paper draft
 	parameter FI.Money C_block = P_gross * pri_block "Power block cost"; // TODO Should be updated based on Eq. 17 in Albrecht et al's ASME conference paper draft
-	parameter FI.Money C_bop = (P_gross * pri_bop) "Balance of plant cost"; 
+	parameter FI.Money C_bop = (P_gross * pri_bop) "Balance of plant cost";
 	parameter FI.Money C_land = A_land * pri_land "Land cost";
 
 	parameter FI.Money C_cap = ((C_field + C_site + C_receiver + C_storage + C_hx + C_block + C_bop) * (1+r_contg)) * (1+r_indirect) * (1+r_cons) + C_land "Capital costs";
@@ -408,6 +429,15 @@ model PhysicalParticleSystem
 		redeclare package Medium = Medium) annotation(
 																					Placement(transformation(extent = {{-14, 74}, {-4, 64}})));
 
+	// Particle heat exchanger: TODO to be implemented
+	//SolarTherm.Models.Fluid.HeatExchangers.SimpleHeatExchanger hx(
+		//redeclare package Medium1=Medium,
+		//redeclare package Medium2=Medium,
+		//A=A_hx,
+		//U=U_hx,
+		//dT_approach=dT_approach_hx) annotation(
+																					//Placement(transformation(extent = {{-20, 8}, {-54, 99}})));
+
 	// PowerBlockControl
 	Models.Control.PowerBlockControl controlHot(
 		m_flow_on = m_flow_blk,
@@ -504,6 +534,15 @@ initial equation
 																Line(points = {{95.56, 14.64}, {78, 14.64}, {78, -13}, {64, -13}}, color = {0, 127, 255}));
 	connect(LiftCold.fluid_b, tankCold.fluid_a) annotation(
 																Line(points = {{95.56, 14.64}, {78, 14.64}, {78, -13}, {64, -13}}, color = {0, 127, 255}));
+
+	//connect(liftHX.fluid_b, hx.port_a_in) annotation(
+																//Line(points = {{78, 44}, {86, 44}, {86, 29.46}, {98.08, 29.46}}, color = {0, 127, 255}));
+	//connect(hx.port_a_out, LiftCold.fluid_a) annotation(
+																//Line(points = {{95.56, 14.64}, {78, 14.64}, {78, -13}, {64, -13}}, color = {0, 127, 255}));
+	//connect(hx.port_b_out, powerBlock.fluid_a) annotation(
+																//Line(points = {{95.56, 14.64}, {78, 14.64}, {78, -13}, {64, -13}}, color = {0, 127, 255}));
+	//connect(powerBlock.fluid_b, hx.port_b_in) annotation(
+																//Line(points = {{95.56, 14.64}, {78, 14.64}, {78, -13}, {64, -13}}, color = {0, 127, 255}));
 
 	// controlCold connections
 	connect(temperature.T, controlCold.T_mea) annotation(
