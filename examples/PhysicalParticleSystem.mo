@@ -230,7 +230,7 @@ model PhysicalParticleSystem
 
 	// Cost data in USD (default) or AUD
 	parameter Real r_disc = 0.0439 "Real discount rate";
-	parameter Real r_i = 0.03 "Inflation rate";
+	parameter Real r_i = 0.025 "Inflation rate";
 
 	parameter Integer t_life(unit = "year") = 30 "Lifetime of plant";
 	parameter Integer t_cons(unit = "year") = 2 "Years of construction";
