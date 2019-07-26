@@ -463,6 +463,7 @@ model PhysicalParticleSystem
 
 	// Power block
 	Models.PowerBlocks.PowerBlockModel powerBlock(
+		redeclare package Medium = Medium,
 		W_des = P_gross,
 		enable_losses = blk_enable_losses,
 		redeclare model Cycle = Cycle,
