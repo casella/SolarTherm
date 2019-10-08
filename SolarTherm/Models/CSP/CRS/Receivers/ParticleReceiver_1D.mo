@@ -15,6 +15,7 @@ model ParticleReceiver_1D
 
 	parameter Boolean const_alpha = true "If true then constant convective heat transfer coefficient";
 	parameter SI.CoefficientOfHeatTransfer alpha=1 if const_alpha "Convective heat transfer coefficient";
+	// FIXME what happens if const_alpha==0?
 
 	Medium.BaseProperties medium;
 
