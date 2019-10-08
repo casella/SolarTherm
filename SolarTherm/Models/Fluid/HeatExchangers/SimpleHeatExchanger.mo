@@ -14,8 +14,10 @@ model SimpleHeatExchanger "A simple counterflow heat exchanger model based on LM
 	parameter SI.MassFlowRate m_flow_cold = 731.042 "Cold side mass flow rate";
 
 	Medium_A.ThermodynamicState state_a_in = Medium_A.setState_phX(port_a_in.p,inStream(port_a_in.h_outflow));
+//	Medium_A.ThermodynamicState state_a_out = Medium_A.setState_phX(port_a_in.p,port_a_out.h_outflow);
 	Medium_A.ThermodynamicState state_a_out = Medium_A.setState_pTX(port_a_in.p,T_a_out);
 	Medium_B.ThermodynamicState state_b_in = Medium_B.setState_phX(port_b_in.p,inStream(port_b_in.h_outflow));
+//	Medium_B.ThermodynamicState state_b_out = Medium_B.setState_phX(port_b_in.p,port_b_out.h_outflow);
 	Medium_B.ThermodynamicState state_b_out = Medium_B.setState_pTX(port_b_in.p,T_b_out);
 
 	SI.Temperature T_a_in(start=800+273.15) "Medium A inlet temperature";
@@ -30,8 +32,10 @@ model SimpleHeatExchanger "A simple counterflow heat exchanger model based on LM
 
 equation
 	port_a_out.h_outflow = Medium_A.specificEnthalpy(state_a_out);
+//	T_b_out = T_b_out_ref;
 	port_b_in.m_flow = m_flow_cold;
 	port_a_in.m_flow + port_a_out.m_flow = 0;
+//	port_b_in.m_flow + port_b_out.m_flow = 0;
 
 	port_a_out.Xi_outflow = inStream(port_a_in.Xi_outflow);
 	port_a_in.Xi_outflow = inStream(port_a_out.Xi_outflow);
@@ -43,8 +47,24 @@ equation
 	port_b_out.C_outflow = inStream(port_b_in.C_outflow);
 	port_b_in.C_outflow = inStream(port_b_out.C_outflow);
 
+//	medium_a_in.p = port_a_in.p;
+//	medium_a_out.p = port_a_out.p;
+//	medium_b_in.p = port_b_in.p;
+//	medium_b_out.p = port_b_out.p;
+
+//	medium_a_in.h = inStream(port_a_in.h_outflow);
+//	medium_a_out.h = port_a_out.h_outflow;
+//	medium_b_in.h = inStream(port_b_in.h_outflow);
+//	medium_b_out.h = port_b_out.h_outflow;
+
 	T_a_in = Medium_A.temperature(state_a_in);
 	T_b_in = Medium_B.temperature(state_b_in);
+	
+//	T_a_out = Medium_A.temperature(state_a_out);
+//	T_b_out = Medium_B.temperature(state_b_out);
+//	medium_a_out.T = T_a_out;
+//	medium_b_in.T = T_b_in;
+//	medium_b_out.T = T_b_out;
 
 	dT_approach = T_a_out - T_b_in;
 	Q_flow = port_a_in.m_flow*(inStream(port_a_in.h_outflow) - port_a_out.h_outflow);
@@ -54,8 +74,9 @@ equation
 
 	port_a_out.p = port_a_in.p;
 	port_b_out.p = pcold;
+//	port_b_out.p = port_b_in.p;
 
-	// Shouldn't have reverse flows
+//	// Shouldn't have reverse flows
 	port_a_in.h_outflow = 0.0;
 	port_b_in.h_outflow = 0.0;
 
