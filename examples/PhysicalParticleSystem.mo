@@ -50,9 +50,9 @@ model PhysicalParticleSystem
 	parameter SI.Area A_heliostat = 100 "Heliostat module reflective area";
 	parameter Real he_av_design = 0.99 "Helisotats availability";
 
-	parameter SI.Efficiency eff_opt = 0.5565 "Field optical efficiency at design point";
+	parameter SI.Efficiency eff_opt = 0.433 "Field optical efficiency at design point";
 	parameter SI.Irradiance dni_des = 788.8 "DNI at design point";
-	parameter Real C = 1200 "Concentration ratio";
+	parameter Real C = 1200 "Instantaneous area-average flux concentration ratio"; //Definition from Lifeng Li et al. (2016) "Optics of solar central receiver systems: a review"
 
 	parameter Real gnd_cvge = 0.3126 "Ground coverage";
 	parameter Real excl_fac = 0.97 "Exclusion factor";
@@ -71,7 +71,7 @@ model PhysicalParticleSystem
 
 	parameter SI.RadiantPower R_des(fixed= if fixed_field then true else false) "Input power to receiver at design point";
 
-	parameter Real rec_fr = 0.165 "Receiver loss fraction of radiance at design point";
+	parameter Real rec_fr = 0.0 "Receiver loss fraction of radiance at design point";
 	parameter SI.Temperature rec_T_amb_des = 298.15 "Ambient temperature at design point";
 
 	parameter Real f_loss = 0.000001 "Fraction of particles flow lost in receiver";
@@ -188,7 +188,7 @@ model PhysicalParticleSystem
 	parameter SI.Area A_field = (R_des/eff_opt/he_av_design)/dni_des "Heliostat field reflective area";
 	parameter Integer n_heliostat = integer(ceil(A_field/A_heliostat)) "Number of heliostats";
 
-	parameter SI.Area A_receiver = A_field/C "Receiver aperture area";
+	parameter SI.Area A_receiver = R_des/C/dni_des "Receiver aperture area";
 	parameter SI.Length H_receiver = sqrt(A_receiver * ar_rec) "Receiver aperture height";
 	parameter SI.Length W_receiver = A_receiver / H_receiver "Receiver aperture width";
 	parameter SI.Length L_receiver = 1 "Receiver length(depth)";
