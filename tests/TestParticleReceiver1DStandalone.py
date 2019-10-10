@@ -11,6 +11,7 @@ class TestParticleReceiver1DStandalone(unittest.TestCase):
 		print "COMPILING MODEL"
 		sim.compile_model()
 		sim.compile_sim(args=['-s'])
+		print "SOLVING MODEL"
 		sim.simulate(start=0, stop='1s', step='1s', solver='dassl',nls=None)
 		self.res = postproc.SimResult(sim.model + '_res.mat')
 
