@@ -43,14 +43,14 @@ model ParticleReceiver1D_standalone "Falling particle flow and energy model"
 	parameter SI.Length th_c_in = 1887.76/(0.6*1200*0.25*24.37) "Curtain thicknesss at the inlet";
 	
 	//Discretisation
-	parameter Integer N = 100 "Number of height positions";
+	parameter Integer N = 100 "Number of vertical elements";
 	parameter SI.Length dx = H_drop/(N) "Vertical step size [m]";
 
 	parameter SI.Temperature T_inlet_des = from_degC(580.3) "Design inlet temperature, K";
 	parameter SI.Pressure p_des = 1e5 "Design pressure, Pa";
 	
 	//Variables
-	SI.MassFlowRate m_flow "Inlet mass flow rate [kg/s]";
+	SI.MassFlowRate m_flow(start=1600,nominal=1000) "Inlet mass flow rate [kg/s]";
 	SI.Temperature T_a "Inlet temperature [K]";
 			
 	//Curtain geometry
@@ -73,9 +73,9 @@ model ParticleReceiver1D_standalone "Falling particle flow and energy model"
 	SI.Temperature T_w_0 (start = T_inlet_des) "Wall inlet temperature";
 	
 	//Curtain radiation properties
-	SI.Efficiency eps_c[N] "Curtain emissivity";
-	SI.Efficiency tau_c[N] "Curtain tramittance";
-	SI.Efficiency abs_c[N] "Curtain absorptance";
+	SI.Efficiency eps_c[N] (max=fill(1.,N),min=fill(0.,N)) "Curtain emissivity";
+	SI.Efficiency tau_c[N] (max=fill(1.,N),min=fill(0.,N)) "Curtain tramittance";
+	SI.Efficiency abs_c[N] (max=fill(1.,N),min=fill(0.,N)) "Curtain absorptance";
 	
 	//Radiation heat fluxes
 	SI.HeatFlux q_solar "Uniform solar flux [W/m2]";
@@ -98,7 +98,11 @@ equation
 	h_in = Medium.specificEnthalpy(Medium.setState_pTX(p_des,T_a));
 	h_out = h_s[N];
 	
-	m_flow = 1887.76;
+	//m_flow = 1887.76; // <-- FIXME -- this is the correct value
+	m_flow = 1700.;
+	//der(m_flow) = h_out - Medium.specificEnthalpy(Medium.setState_pTX(p_des,800+273.15));
+	//h_out = Medium.specificEnthalpy(Medium.setState_pTX(p_des,800+273.15));
+
 	T_a = T_inlet_des;
 	
 	x[1] = dx/2;
