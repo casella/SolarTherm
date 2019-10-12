@@ -1,10 +1,10 @@
 
 function function_1 "function used in curtain property calculation"
-  input Real eps_s "emissivity of the particle";
-  input Real Cta "product C[i]*th_c[i]*a";
+  //input Real eps_s "emissivity of the particle";
+  input Real eCta "product eps_s*C[i]*th_c[i]*a";
   output Real result;
 algorithm
-  result := 1-(1/((eps_s*Cta)^2))+((1+eps_s*Cta)/((eps_s*Cta)^2))*exp(-eps_s*Cta);
+  result := 1 - 1/(eCta)^2 + (1+eCta)/(eCta)^2 * exp(-eCta);
 end function_1;
 
 model ParticleReceiver1D_standalone "Falling particle flow and energy model"
@@ -20,6 +20,10 @@ model ParticleReceiver1D_standalone "Falling particle flow and energy model"
 	import Modelica.SIunits.Conversions.*;
 	import SolarTherm.Media;
 
+	// Medium
+	replaceable package Medium = Media.SolidParticles.CarboHSP_ph;
+
+	// Model configuratoin
 	constant Boolean fixed_geometry = false "If true, specified H_drop, t_c and calculate T_out, mdot. If false, vice versa";
     constant Boolean with_wall_conduction = false "Whether to model vertical conduction in backwall"; // FIXME may need to revisit this
 	constant Boolean fixed_cp = false "If false, use the Medium model. If true, use simplified cp=const approx";
@@ -28,10 +32,7 @@ model ParticleReceiver1D_standalone "Falling particle flow and energy model"
 	constant SI.SpecificHeatCapacity cp_s = 1200. "solid specific heat capacity [J/kg-K]";
 
 	//Discretisation
-	parameter Integer N = 20 "Number of vertical elements";
-
-	// Medium
-	replaceable package Medium = Media.SolidParticles.CarboHSP_ph;
+	parameter Integer N = 10 "Number of vertical elements";
 
 	// temperature used to initialise screen
 	parameter SI.Temperature T_ref = from_degC(580.3);
@@ -45,62 +46,48 @@ model ParticleReceiver1D_standalone "Falling particle flow and energy model"
 	parameter SI.Area a = 0.25 * CONST.pi * d_p^2 "cross sectional particle area [m2]";
 
 	// Medium properties
-	parameter SI.Efficiency eps_s = 0.86 "solid particle emissivity";
-	parameter SI.Efficiency abs_s = 0.92 "solid particle absorptivity";
-	parameter SI.Density rho_s = 3300. "solid density [kg/m3]";
-	parameter Real phi_s_max = 0.6 "packing limit";
+	parameter SI.Efficiency eps_s = 0.86 "Particle emissivity";
+	parameter SI.Efficiency abs_s = 0.92 "Particle absorptivity";
+	parameter SI.Density rho_s = 3300. "Particle density [kg/m3]";
+	parameter Real phi_s_max = 0.6 "Maximum achievable particle volume fraction";
 
-	// Environmental variables
+	// Environment
 	parameter SI.Temperature T_amb = from_degC(25) "Ambient temperature [K]";
-	parameter SI.CoefficientOfHeatTransfer h_conv = 100. "Convective heat transfer coefficient [W/m^2-K]";
+	parameter SI.CoefficientOfHeatTransfer h_conv = 100. "Convective heat transfer coefficient (back of backwall) [W/m^2-K]";
 
 	//Wall properties
-	parameter SI.Efficiency eps_w = 0.8 "receiver wall emissivity";
-	parameter SI.ThermalConductivity k_w = 0.2 "b wall thermal conductivity [W/m-K]";
-	parameter SI.Length t_w = 0.05 "back wall thickness [m]";
+	parameter SI.Efficiency eps_w = 0.8 "Receiver wall emissivity";
+	parameter SI.ThermalConductivity k_w = 0.2 "Backwall thermal conductivity [W/m-K]";
+	parameter SI.Length t_w = 0.05 "Backwall thickness [m]";
+
+	// Design conditions (should be used during initialisation)
+	parameter SI.Temperature T_in_des = from_degC(580.3) "Inlet temperature [K]";
+	parameter SI.Temperature T_out_des = from_degC(800.) "Outlet temperature [K]";
+	parameter SI.Pressure p_des = from_bar(1) "Design pressure, Pa";
+	parameter SI.Velocity v_s_in = 0.25 "Inlet curtain velocity [m/s]";
+	parameter Real AR = 1 "Receiver aspect ratio";
+	parameter SI.Angle theta_c = from_deg(0.) "representative angle of rays incident on the particle screen";
 
 	// Receiver geometry
-	parameter Real AR = 1 "Receiver aspect ratio";
-	//parameter SI.Length t_c_in = 1887.76/(0.6*1200*0.25*24.37) "Curtain thicknesss at the inlet";
 	SI.Length t_c_in (start=1887.76/(0.6*1200*0.25*24.37)) "Curtain thicknesss at the inlet";
-
 	SI.Length H_drop "Receiver drop height [m]";
 	SI.Area A_ap "Receiver aperture area [m2]";
 	SI.Length w_c "Aperture (curtain) width [m], w_curtain";
 	SI.Length dx "Vertical step size [m]";
 
-	// fixed for now, later it would be variable...
-	parameter SI.Temperature T_in = from_degC(580.3) "Inlet temperature [K]";
-	//parameter SI.Temperature T_in = from_degC(150) "Inlet temperature [K]";
-	//parameter SI.Temperature T_in = T_amb  "Inlet temperature [K]";
-	parameter SI.Temperature T_out_des = from_degC(800.) "Outlet temperature [K]";
 	SI.Temperature T_out(start=T_out_des) "Outlet temperature [K]";
-	//parameter SI.Temperature T_in_des = from_degC(580.3) "Design inlet temperature, K";
-	parameter SI.Pressure p_des = 1e5 "Design pressure, Pa";
-
-	//Variables
+	SI.Temperature T_in(start=T_in_des) "Inlet temperature [K]";
 	SI.MassFlowRate mdot(start=1600,nominal=1000) "Inlet mass flow rate [kg/s]";
 
-	//Curtain geometry
-	Real phi_s__[N+1] (start=fill(0.5,N+1),min=zeros(N+1),max=fill(1,N+1)) "Curtain packing factor";
-
-	// Vertical positions
+	// Distributed variables for the particle curtain
+	Real phi_s__[N+1] (start=fill(0.5,N+1),min=zeros(N+1),max=fill(1,N+1)) "Curtain packing factor (volume fraction)";
 	SI.Length x__[N+2] (min=zeros(N+2),max=fill(100.,N+2)) "Vertical positions of nodes";
-
-	// NOTE variables with a '__' appended to the name needed a [0] index in EES. Hence they are index with [i+1] in this code.
-
-	//Flow properties and variables
-	parameter SI.Velocity v_s_in = 0.25 "Inlet curtain velocity [m/s]";
 	SI.Velocity v_s__[N+1] (start=fill(1.5*v_s_in,N+1),min=fill(v_s_in,N+1),max=fill(1000,N+1)) "Particles velocity [m/s]";
 	SI.Length t_c__[N+2] "Receiver depth";
-	//Real C[N] "FIXME something to do with curtain opacity";
-	SI.Temperature T_s__[N+1] (start = fill(T_in,N+1), max=fill(3000.,N+1)) "Curtain Temperature";
+	SI.Temperature T_s__[N+1] (start = fill(T_in_des,N+1), max=fill(3000.,N+1)) "Curtain Temperature";
 	SI.SpecificEnthalpy h_s__[N+1] (start = fill(h_0,N+1), max=fill(cp_s*(2000-T_ref),N+1)) "Curtain enthalpy";
-	SI.SpecificEnthalpy h_out (start = h_0) "Curtain outlet enthalpy";
-
-	//Wall properties and variables
 	SI.Temperature T_w__[N+2] (start = fill(T_amb+1.,N+2), max=fill(3000.,N+2)) "Receiver wall temperature";
-	//SI.Temperature T_w_0 (start = T_in) "Wall inlet temperature";
+	// NOTE variables with a '__' appended to the name needed a [0] index in EES. Hence they are index with [i+1] in this code.
 
 	//Curtain radiation properties
 	SI.Efficiency eps_c[N] (start=fill(0.5,N),max=fill(1.,N),min=fill(0.,N)) "Curtain emissivity";
@@ -109,103 +96,90 @@ model ParticleReceiver1D_standalone "Falling particle flow and energy model"
 
 	//Radiation heat fluxes
 	SI.HeatFlux q_solar "Uniform solar flux [W/m2]";
+	SI.HeatFlux gc_f[N] (min=zeros(N)) "Curtain radiation gain at the front";
+	SI.HeatFlux jc_f[N] (min=zeros(N)) "Curtain radiation loss at the front";
+	SI.HeatFlux gc_b[N] (min=zeros(N)) "Curtain radiation gain at the back";
+	SI.HeatFlux jc_b[N] (min=zeros(N)) "Curtain radiation loss at the back";
+	SI.HeatFlux g_w[N] (min=zeros(N)) "Wall radiation gain from the front";
+	SI.HeatFlux j_w[N] (min=zeros(N)) "Wall radiosity (outwards to the front)";
+	SI.HeatFlux q_conv[N] "Heat flux lost through backwall by conduction/convection";
+	SI.HeatFlux q_net_c[N] "Net heat flux gained by curtain";
 
 	//Overall performance
 	SI.HeatFlowRate Qdot_rec "Total heat rate absorbed by the receiver";
 	SI.HeatFlowRate Qdot_inc "Total heat rate incident upon the receiver (before losses)";
 	Real eta_rec(min=0, max=1) "Receiver efficiency";
 
-//protected
-
-	SI.HeatFlux gc_f[N] (min=zeros(N)) "Curtain radiation gain at the front";
-	SI.HeatFlux jc_f[N] (min=zeros(N)) "Curtain radiation loss at the front";
-	SI.HeatFlux gc_b[N] (min=zeros(N)) "Curtain radiation gain at the back";
-	SI.HeatFlux jc_b[N] (min=zeros(N)) "Curtain radiation loss at the back";
-	SI.HeatFlux g_w[N] (min=zeros(N)) "Wall radiation gain from the front";
-	SI.HeatFlux j_w[N] (min=zeros(N)) "Wall radiosity (front)";
-
-	SI.HeatFlux q_conv[N] "Heat flux loss by convection";
-	SI.HeatFlux q_net_c[N] "Net heat gain by curtain";
-
-	SI.MassFlowRate mdot_check "mass balance check";
-	SI.HeatFlowRate Qdot_check "heat balance check";
+	SI.MassFlowRate mdot_check "Mass balance check";
+	SI.HeatFlowRate Qdot_check "Heat balance check";
 equation
 	dx * N = H_drop;
 	AR * H_drop = w_c;
 	A_ap = H_drop * w_c;
 
-	//q_solar = 1200*788.8;///A_ap; //q_solar=DNI*CR
-	q_solar = 1200 * 788.8;
-
-	h_out = h_s__[N]; // just an alias
+	q_solar = 1200 * 788.8; //q_solar=DNI*CR
 
 	if fixed_geometry then
-		// specify the geometry, see how the particles are heated
-		// note that mass flow rate is calculated from v_s_in, t_c, w_c.
+		// Off-design mode: T_in, H_drop, t_c are fixed, calculate T_out,mdot.
+		// FIXME still need to implement curtain width control (t_c)
+		T_in = T_in_des;
 		H_drop = 24.37;
 		t_c_in = 1887.76/(0.6*1200*0.25*24.37);
-		//mdot = 2000.;
+		// note that mass flow rate is calculated from v_s_in, t_c, w_c.
 	else
-		// specify the final temperature and heat flux.
+		// Design mode: mdot,T_in,T_out are fixed, calculate H_drop,t_c.
 		mdot = 1827.;
+		T_in = T_in_des;
 		T_s__[N+1] = T_out_des;
 	end if;
-	T_out = T_s__[N+1];
 
 	// Boundary conditions
 	phi_s__[1] = phi_s_max;
-	//t_c__[1] = t_c_in; // covered by loop below
-	//phi_s__[1]*rho_s*v_s__[1]*t_c__[1]*w_c = mdot; // to determine th_c[1]
-	T_s__[1] = T_in;
-	// h_s__[1] = Medium.specificEnthalpy(Medium.setState_pTX(p_des,T_s__[1])); // covered in loop below
 	v_s__[1] = v_s_in;
+	T_s__[1] = T_in;
+	T_s__[N+1] = T_out;
 	T_w__[1] = T_w__[2];
 	T_w__[N+2]=T_w__[N+1];
 
+	// Node locations
 	x__[1] = 0;
 	for i in 2:N+1 loop
 		x__[i] = dx*(1./2 + (i-2));
 	end for;
 	x__[N+2] = H_drop;
 
+	for i in 1:N+2 loop
+		// Curtain thickness
+		t_c__[i] = t_c_in + 0.0087*x__[i]; // Oles and Jackson (Sol. En. 2015), Eq 18.
+	end for;
+
 	for i in 1:N+1 loop
+		// Particle enthalpy
+		h_s__[i] = if fixed_cp then cp_s*(T_s__[i]-T_ref)
+			else Medium.specificEnthalpy(Medium.setState_pTX(p_des,T_s__[i]));
+
 		// Mass balance
 		mdot = phi_s__[i]*rho_s*v_s__[i]*t_c__[i]*w_c;
 	end for;
 
 	for i in 2:N+1 loop
-		// Curtain Mass balance
-		//phi_s__[i]*t_c__[i]*rho_s*v_s__[i]
-		//	= phi_s__[i-1]*t_c__[i-1]*rho_s*v_s__[i-1];
-
-		// Curtain momentum balance (curtain opacity)
-		mdot*(v_s__[i] - v_s__[i-1])
-				= dx*w_c*phi_s__[i]*t_c__[i]*rho_s* CONST.g_n;
-
-	end for;
-
-	for i in 1:N+1 loop
-		h_s__[i] =
-		 	if fixed_cp then cp_s*(T_s__[i]-T_ref)
-			else Medium.specificEnthalpy(Medium.setState_pTX(p_des,T_s__[i]));
-	end for;
-
-	for i in 1:N+2 loop
-		// Curtain thickness, FIXME note magic number 'growth factor'...
-		t_c__[i] = t_c_in + 0.0087*x__[i];
+		// Curtain momentum balance (gravity causing decreased curtain opacity)
+		mdot*(v_s__[i] - v_s__[i-1]) = dx*w_c*phi_s__[i]*t_c__[i]*rho_s* CONST.g_n;
 	end for;
 
 	for i in 1:N loop
-
 		if with_uniform_curtain_props then
 			eps_c[i] = eps_s;
 			abs_c[i] = abs_s;
 			tau_c[i] = 0.4; //exp(-3*phi_s__[i+1]*t_c__[i+1]/(2*d_p));
 		else
 			// Curtain radiation properties
-			eps_c[i]*(1-tau_c[i]) = function_1(eps_s, 6*phi_s__[i+1]/(CONST.pi*d_p^3) * t_c__[i+1] * a);
-			abs_c[i]*(1-tau_c[i]) = function_1(abs_s, 6*phi_s__[i+1]/(CONST.pi*d_p^3) * t_c__[i+1] * a);
-			tau_c[i] = exp(-3*phi_s__[i+1]*t_c__[i+1]/(2*d_p));
+			// Can't find a clear reference for these equations...
+			eps_c[i]*(1-tau_c[i]) = function_1(eps_s * 6*phi_s__[i+1]/(CONST.pi*d_p^3) * t_c__[i+1] * a);
+			abs_c[i]*(1-tau_c[i]) = function_1(abs_s * 6*phi_s__[i+1]/(CONST.pi*d_p^3) * t_c__[i+1] * a);
+			//tau_c[i] = exp(-3*phi_s__[i+1]*t_c__[i+1]/(2*d_p)); // Oles & Jackson (Sol. En., 2015), Eq 31.
+			tau_c[i] = exp(-3*phi_s__[i+1]*t_c__[i+1]/(2*d_p)/cos(theta_c)); // Oles & Jackson (Sol. En., 2015), Eq 31.
+			// FIXME note that tau_c should have an adjustment for cos(theta) of rays.
 		end if;
 
 		// Curtain energy balance
@@ -253,5 +227,10 @@ National Laboratories.</p></html>", revisions="<html>
 <dt>Armando Fontalvo:<dd>Initial development as a stand-alone model.
 <dt>John Pye:<dd>Expanded model with various binary switches plus variable geometry mode.
 </ul>
+<h4>References</h4>
+<ol>
+<li>Oles and Jackson, Sol. En. 2015. http://dx.doi.org/10.1016/j.solener.2015.08.009.
+<li>Roger et al, JSEE 2011. https://doi.org/10.1115/1.4004269
+</ol>
 </html>"));
 end ParticleReceiver1D_standalone;

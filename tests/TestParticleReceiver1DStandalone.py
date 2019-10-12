@@ -38,7 +38,7 @@ class TestParticleReceiver1DStandalone(unittest.TestCase):
 		N = getval('N')
 		if VERBOSE:
 			print "RESULTS"
-			vl = ['N','T_s__[1]','T_s__[%d]'%(N,), 'mdot', 'T_in','q_solar','A_ap'
+			vl = ['N','T_s__[1]','T_s__[%d]'%(N+1,), 'mdot', 'q_solar','A_ap'
 				,'eta_rec','eps_c[%d]'%(N,),'mdot_check','Qdot_check'
 				,'H_drop','w_c','t_c_in']
 			for v in vl:
