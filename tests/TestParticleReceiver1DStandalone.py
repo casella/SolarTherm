@@ -37,9 +37,14 @@ class TestParticleReceiver1DStandalone(unittest.TestCase):
 
 		N = getval('N')
 		vl = ['N','T_s__[1]','T_s__[%d]'%(N,), 'mdot', 'T_in','q_solar','A_ap'
-			,'Qdot_rec','Qdot_inc','eta_rec','eps_c[%d]'%(N,),'mdot_check','Qdot_check']
+			,'eta_rec','eps_c[%d]'%(N,),'mdot_check','Qdot_check'
+			,'H_drop','w_c']
 		for v in vl:
 			print '%s = %f' %(v,getval(v))
+		for v in ['Qdot_rec','Qdot_inc']:
+			print '%s = %f MW'%(v,getval(v)/1e6)
+		for T in ['T_in','T_out']:
+			print '%s = %f°C'%(T,getval(T)-273.15)
 
 		if PLOTME:
 			import matplotlib; matplotlib.use('GTKCairo')
@@ -108,12 +113,12 @@ class TestParticleReceiver1DStandalone(unittest.TestCase):
 			pl.show()
 
 		self.assertAlmostEqual(getval('q_solar'),1200*788.8,delta=1.)
-		self.assertAlmostEqual(getval('A_ap'),593.7,delta=0.2)
-		self.assertAlmostEqual(getval('T_s[1]'),580.3+273.15,delta=2)
+		self.assertAlmostEqual(getval('A_ap'),593.7,delta=30)
+		self.assertAlmostEqual(getval('T_in'),580.3+273.15,delta=2)
 		#self.assertAlmostEqual(getval('mdot'),1827,delta=100)
-		self.assertAlmostEqual(getval('T_s[%d]'%(N,)),800+273.15,delta=0.5)
-		self.assertAlmostEqual(getval('Qdot_rec'),497690.,delta=100.)
-		self.assertAlmostEqual(getval('eta_rec'),0.8568,delta=0.0005)
+		self.assertAlmostEqual(getval('T_out'),800+273.15,delta=0.5)
+		self.assertAlmostEqual(getval('Qdot_rec'),497690e3,delta=1e6)
+		self.assertAlmostEqual(getval('eta_rec'),0.8568,delta=0.01)
 
 if __name__ == '__main__':
 	PLOTME=1

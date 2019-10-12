@@ -28,7 +28,7 @@ model ParticleReceiver1D_standalone "Falling particle flow and energy model"
 	constant SI.SpecificHeatCapacity cp_s = 1200. "solid specific heat capacity [J/kg-K]";
 
 	//Discretisation
-	parameter Integer N = 10 "Number of vertical elements";
+	parameter Integer N = 20 "Number of vertical elements";
 
 	// Medium
 	replaceable package Medium = Media.SolidParticles.CarboHSP_ph;
@@ -70,8 +70,8 @@ model ParticleReceiver1D_standalone "Falling particle flow and energy model"
 	SI.Length dx "Vertical step size [m]";
 
 	// fixed for now, later it would be variable...
-	//parameter SI.Temperature T_in = from_degC(580.3) "Inlet temperature [K]";
-	parameter SI.Temperature T_in = from_degC(150) "Inlet temperature [K]";
+	parameter SI.Temperature T_in = from_degC(580.3) "Inlet temperature [K]";
+	//parameter SI.Temperature T_in = from_degC(150) "Inlet temperature [K]";
 	//parameter SI.Temperature T_in = T_amb  "Inlet temperature [K]";
 	parameter SI.Temperature T_out = from_degC(800.) "Outlet temperature [K]";
 	//parameter SI.Temperature T_in_des = from_degC(580.3) "Design inlet temperature, K";
@@ -93,7 +93,7 @@ model ParticleReceiver1D_standalone "Falling particle flow and energy model"
 	SI.Velocity v_s__[N+1] (start=fill(1.5*v_s_in,N+1),min=fill(v_s_in,N+1),max=fill(1000,N+1)) "Particles velocity [m/s]";
 	SI.Length t_c__[N+2] "Receiver depth";
 	//Real C[N] "FIXME something to do with curtain opacity";
-	SI.Temperature T_s__[N+1] (start = fill(T_amb,N+1), max=fill(1400.,N+1)) "Curtain Temperature";
+	SI.Temperature T_s__[N+1] (start = fill(T_in,N+1), max=fill(3000.,N+1)) "Curtain Temperature";
 	SI.SpecificEnthalpy h_s__[N+1] (start = fill(h_0,N+1), max=fill(cp_s*(2000-T_ref),N+1)) "Curtain enthalpy";
 	SI.SpecificEnthalpy h_out (start = h_0) "Curtain outlet enthalpy";
 
@@ -134,7 +134,7 @@ equation
 	A_ap = H_drop * w_c;
 
 	//q_solar = 1200*788.8;///A_ap; //q_solar=DNI*CR
-	q_solar = 2000 * 788.8;
+	q_solar = 1200 * 788.8;
 
 	h_out = h_s__[N]; // just an alias
 
@@ -144,7 +144,7 @@ equation
 		mdot = 1887.76;
 	else
 		// specify the final temperature and heat flux.
-		mdot = 1887.76;
+		mdot = 1827.;
 		T_s__[N+1] = T_out;
 	end if;
 
@@ -245,8 +245,9 @@ equation
 	annotation (Documentation(info="<html>
 <p>Model based on an EES-based model written by Kevin Albrecht at Sandia
 National Laboratories.</p></html>", revisions="<html>
-<ul>
-<li>Armando Fontalvo: <br>Initial development as a stand-alone model. </li>
+<dl>
+<dt>Armando Fontalvo:<dd>Initial development as a stand-alone model.
+<dt>John Pye:<dd>Expanded model with various binary switches plus variable geometry mode.
 </ul>
 </html>"));
 end ParticleReceiver1D_standalone;
