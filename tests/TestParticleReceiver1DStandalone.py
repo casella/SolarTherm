@@ -1,4 +1,5 @@
 #! /bin/env python2
+# -*- coding: utf-8 -*-
 from __future__ import division
 import unittest
 from solartherm import simulation, postproc
@@ -60,10 +61,11 @@ class TestParticleReceiver1DStandalone(unittest.TestCase):
 
 			sp+=1; pl.subplot(nr,nc,sp,sharey=ax1)
 			for vn in ['t_c__']:
-				val = [getval('%s[%d]'%(vn,i+1))/1000 for i in range(N+1)]
+				val = [getval('%s[%d]'%(vn,i+1))*100 for i in range(N+1)]
 				pl.plot(val,x[:-1],label=vn,marker='o',markerfacecolor=None)
 			pl.legend()
-			pl.xlabel('Thickness / [mm]')
+			pl.xlim(0,max(val))
+			pl.xlabel('Thickness / [cm]')
 
 			sp+=1; pl.subplot(nr,nc,sp,sharey=ax1)
 			Qdot_new_c = [getval('q_net_c[%d]'%(i+1))/1000. for i in range(N)]
@@ -75,6 +77,7 @@ class TestParticleReceiver1DStandalone(unittest.TestCase):
 				val = [getval('%s[%d]'%(vn,i+1)) for i in range(N+1)]
 				pl.plot(val,x[:-1],label=vn,marker='o',markerfacecolor=None)
 			pl.legend()
+			pl.xlim(0,0.03)
 			pl.xlabel('Fraction / [1]')
 
 			sp+=1; pl.subplot(nr,nc,sp,sharey=ax1)
@@ -86,20 +89,20 @@ class TestParticleReceiver1DStandalone(unittest.TestCase):
 			pl.xlabel('Fraction / [1]')
 
 			sp+=1; pl.subplot(nr,nc,sp,sharey=ax1)
-			for vn in ['gc_f','gc_b','g_w','jc_f','jc_b','j_w']:
+			for vn in ['gc_b','g_w','jc_f','jc_b','j_w']:
 				Qdotdd = [getval('%s[%d]'%(vn,i+1))/1000. for i in range(N)]
 				pl.plot(Qdotdd,x1,label=vn,marker='o')
 			pl.legend()
 			pl.xlabel('Heat flux / [kW/m2]')
 
 			sp+=1; pl.subplot(nr,nc,sp,sharey=ax1)
-			T_s = [getval('T_s__[%d]'%(i+1)) for i in range(N+1)]
+			T_s = [getval('T_s__[%d]'%(i+1))-273.15 for i in range(N+1)]
 			pl.plot(T_s,x[:-1],'ko-',label='particle')
-			T_w = [getval('T_w__[%d]'%(i+1)) for i in range(N+2)]
+			T_w = [getval('T_w__[%d]'%(i+1))-273.15 for i in range(N+2)]
 			#x_w = [getval('x__[%d]'%(i+1)) for i in range(N+2)]
 			pl.ylim(max(x),0)
 			pl.plot(T_w,x,'ro-',label='backwall')
-			pl.xlabel('Temperature / [K]')
+			pl.xlabel('Temperature / [°C]')
 			pl.legend()
 
 			pl.show()

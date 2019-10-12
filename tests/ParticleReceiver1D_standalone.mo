@@ -20,7 +20,7 @@ model ParticleReceiver1D_standalone "Falling particle flow and energy model"
 	import Modelica.SIunits.Conversions.*;
 	import SolarTherm.Media;
 
-	constant Boolean fixed_geometry = true;
+	constant Boolean fixed_geometry = false;
     constant Boolean with_wall_conduction = false;
 	constant Boolean fixed_cp = false;
 	constant Boolean with_isothermal_backwall = false;
@@ -28,7 +28,7 @@ model ParticleReceiver1D_standalone "Falling particle flow and energy model"
 	constant SI.SpecificHeatCapacity cp_s = 1200. "solid specific heat capacity [J/kg-K]";
 
 	//Discretisation
-	parameter Integer N = 20 "Number of vertical elements";
+	parameter Integer N = 10 "Number of vertical elements";
 
 	// Medium
 	replaceable package Medium = Media.SolidParticles.CarboHSP_ph;
@@ -61,7 +61,8 @@ model ParticleReceiver1D_standalone "Falling particle flow and energy model"
 
 	// Receiver geometry
 	parameter Real AR = 1 "Receiver aspect ratio";
-	parameter SI.Length t_c_in = 1887.76/(0.6*1200*0.25*24.37) "Curtain thicknesss at the inlet";
+	//parameter SI.Length t_c_in = 1887.76/(0.6*1200*0.25*24.37) "Curtain thicknesss at the inlet";
+	SI.Length t_c_in (start=1887.76/(0.6*1200*0.25*24.37)) "Curtain thicknesss at the inlet";
 
 	SI.Length H_drop "Receiver drop height [m]";
 	SI.Area A_ap "Receiver aperture area [m2]";
@@ -70,7 +71,8 @@ model ParticleReceiver1D_standalone "Falling particle flow and energy model"
 
 	// fixed for now, later it would be variable...
 	//parameter SI.Temperature T_in = from_degC(580.3) "Inlet temperature [K]";
-	parameter SI.Temperature T_in = T_amb  "Inlet temperature [K]";
+	parameter SI.Temperature T_in = from_degC(150) "Inlet temperature [K]";
+	//parameter SI.Temperature T_in = T_amb  "Inlet temperature [K]";
 	parameter SI.Temperature T_out = from_degC(800.) "Outlet temperature [K]";
 	//parameter SI.Temperature T_in_des = from_degC(580.3) "Design inlet temperature, K";
 	parameter SI.Pressure p_des = 1e5 "Design pressure, Pa";
@@ -91,12 +93,12 @@ model ParticleReceiver1D_standalone "Falling particle flow and energy model"
 	SI.Velocity v_s__[N+1] (start=fill(1.5*v_s_in,N+1),min=fill(v_s_in,N+1),max=fill(1000,N+1)) "Particles velocity [m/s]";
 	SI.Length t_c__[N+2] "Receiver depth";
 	//Real C[N] "FIXME something to do with curtain opacity";
-	SI.Temperature T_s__[N+1] (start = fill(T_in,N+1), max=fill(1400.,N+1)) "Curtain Temperature";
+	SI.Temperature T_s__[N+1] (start = fill(T_amb,N+1), max=fill(1400.,N+1)) "Curtain Temperature";
 	SI.SpecificEnthalpy h_s__[N+1] (start = fill(h_0,N+1), max=fill(cp_s*(2000-T_ref),N+1)) "Curtain enthalpy";
 	SI.SpecificEnthalpy h_out (start = h_0) "Curtain outlet enthalpy";
 
 	//Wall properties and variables
-	SI.Temperature T_w__[N+2] (start = fill(T_in,N+2), max=fill(1500.,N+2)) "Receiver wall temperature";
+	SI.Temperature T_w__[N+2] (start = fill(T_amb+1.,N+2), max=fill(3000.,N+2)) "Receiver wall temperature";
 	//SI.Temperature T_w_0 (start = T_in) "Wall inlet temperature";
 
 	//Curtain radiation properties
@@ -132,17 +134,17 @@ equation
 	A_ap = H_drop * w_c;
 
 	//q_solar = 1200*788.8;///A_ap; //q_solar=DNI*CR
-	q_solar = 1200 * 788.8;
+	q_solar = 2000 * 788.8;
 
 	h_out = h_s__[N]; // just an alias
 
 	if fixed_geometry then
 		// specify the geometry and flow rate, see how the particles are heated
 		H_drop = 24.37;
-		//mdot = 1887.76;
+		mdot = 1887.76;
 	else
 		// specify the final temperature and heat flux.
-		//mdot = 1887.76;
+		mdot = 1887.76;
 		T_s__[N+1] = T_out;
 	end if;
 
@@ -233,11 +235,12 @@ equation
 	end for;
 
 	mdot_check = phi_s__[1]*rho_s*v_s__[1]*w_c*t_c__[1]  -  phi_s__[N+1]*rho_s*v_s__[N+1]*w_c*t_c__[N+1];
-	Qdot_check = Qdot_inc - sum((q_conv[i] + jc_f[i])*dx*w_c for i in 1:N+1) - Qdot_rec;
 
 	Qdot_inc = q_solar * A_ap;
 	Qdot_rec = mdot * (h_s__[N+1] - h_s__[1]);
 	eta_rec = Qdot_rec / Qdot_inc;
+
+	Qdot_check = Qdot_rec - sum(dx*w_c*q_net_c[i] for i in 1:N);
 
 	annotation (Documentation(info="<html>
 <p>Model based on an EES-based model written by Kevin Albrecht at Sandia
