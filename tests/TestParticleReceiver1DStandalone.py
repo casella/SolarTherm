@@ -7,44 +7,46 @@ import os.path
 
 PLOTME=0
 RUNSIM=1
+VERBOSE=0
 
 class TestParticleReceiver1DStandalone(unittest.TestCase):
 	def test1(self):
-		print "RUNNING SETUP"
+		global VERBOSE, RUNSIM, PLOTME
 		fn = 'ParticleReceiver1D_standalone.mo'
+		if VERBOSE: print "RUNNING SETUP"
 		sim = simulation.Simulator(fn)
 		resfn = sim.model + '_res.mat'
-		global RUNSIM
 		if RUNSIM=='if-needed':
 			RUNSIM = os.path.getctime(resfn) < os.path.getctime(fn)
-			print "RUNSIM =",RUNSIM
+			print "RUNSIM = %s ('if-needed' test)"%(RUNSIM,)
 		if RUNSIM:
-			print "COMPILING MODEL"
+			if VERBOSE: print "COMPILING MODEL"
 			sim.compile_model(args=['-d=bltdump'])
-			print "COMPILING SIM"
+			if VERBOSE: print "COMPILING SIM"
 			sim.compile_sim(args=['-s'])
-			print "SOLVING MODEL"
+			if VERBOSE: print "SOLVING MODEL"
 			sim.simulate(start=0, stop='1s', step='1s'
 				,solver='dassl',nls=None
 				#,lv='LOG_DEBUG,LOG_NLS,LOG_SOLVER'#,LOG_NLS_V'
 			)
 		self.res = postproc.SimResult(resfn)
 
-		print "RESULTS"
 
 		def getval(n):
 			return self.res.interpolate(n,1)
 
 		N = getval('N')
-		vl = ['N','T_s__[1]','T_s__[%d]'%(N,), 'mdot', 'T_in','q_solar','A_ap'
-			,'eta_rec','eps_c[%d]'%(N,),'mdot_check','Qdot_check'
-			,'H_drop','w_c']
-		for v in vl:
-			print '%s = %f' %(v,getval(v))
-		for v in ['Qdot_rec','Qdot_inc']:
-			print '%s = %f MW'%(v,getval(v)/1e6)
-		for T in ['T_in','T_out']:
-			print '%s = %f°C'%(T,getval(T)-273.15)
+		if VERBOSE:
+			print "RESULTS"
+			vl = ['N','T_s__[1]','T_s__[%d]'%(N,), 'mdot', 'T_in','q_solar','A_ap'
+				,'eta_rec','eps_c[%d]'%(N,),'mdot_check','Qdot_check'
+				,'H_drop','w_c','t_c_in']
+			for v in vl:
+				print '%s = %f' %(v,getval(v))
+			for v in ['Qdot_rec','Qdot_inc']:
+				print '%s = %f MW'%(v,getval(v)/1e6)
+			for T in ['T_in','T_out']:
+				print '%s = %f°C'%(T,getval(T)-273.15)
 
 		if PLOTME:
 			import matplotlib; matplotlib.use('GTKCairo')
@@ -122,5 +124,6 @@ class TestParticleReceiver1DStandalone(unittest.TestCase):
 
 if __name__ == '__main__':
 	PLOTME=1
+	VERBOSE=1
 	RUNSIM='if-needed'
 	unittest.main()

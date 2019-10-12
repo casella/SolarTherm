@@ -73,7 +73,8 @@ model ParticleReceiver1D_standalone "Falling particle flow and energy model"
 	parameter SI.Temperature T_in = from_degC(580.3) "Inlet temperature [K]";
 	//parameter SI.Temperature T_in = from_degC(150) "Inlet temperature [K]";
 	//parameter SI.Temperature T_in = T_amb  "Inlet temperature [K]";
-	parameter SI.Temperature T_out = from_degC(800.) "Outlet temperature [K]";
+	parameter SI.Temperature T_out_des = from_degC(800.) "Outlet temperature [K]";
+	SI.Temperature T_out(start=T_out_des) "Outlet temperature [K]";
 	//parameter SI.Temperature T_in_des = from_degC(580.3) "Design inlet temperature, K";
 	parameter SI.Pressure p_des = 1e5 "Design pressure, Pa";
 
@@ -139,14 +140,17 @@ equation
 	h_out = h_s__[N]; // just an alias
 
 	if fixed_geometry then
-		// specify the geometry and flow rate, see how the particles are heated
+		// specify the geometry, see how the particles are heated
+		// note that mass flow rate is calculated from v_s_in, t_c, w_c.
 		H_drop = 24.37;
-		mdot = 1887.76;
+		t_c_in = 1887.76/(0.6*1200*0.25*24.37);
+		//mdot = 2000.;
 	else
 		// specify the final temperature and heat flux.
 		mdot = 1827.;
-		T_s__[N+1] = T_out;
+		T_s__[N+1] = T_out_des;
 	end if;
+	T_out = T_s__[N+1];
 
 	// Boundary conditions
 	phi_s__[1] = phi_s_max;
