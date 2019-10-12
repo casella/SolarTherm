@@ -20,11 +20,11 @@ model ParticleReceiver1D_standalone "Falling particle flow and energy model"
 	import Modelica.SIunits.Conversions.*;
 	import SolarTherm.Media;
 
-	constant Boolean fixed_geometry = false;
-    constant Boolean with_wall_conduction = false;
-	constant Boolean fixed_cp = false;
-	constant Boolean with_isothermal_backwall = false;
-	constant Boolean with_uniform_curtain_props = false;
+	constant Boolean fixed_geometry = false "If true, specified H_drop, t_c and calculate T_out, mdot. If false, vice versa";
+    constant Boolean with_wall_conduction = false "Whether to model vertical conduction in backwall"; // FIXME may need to revisit this
+	constant Boolean fixed_cp = false "If false, use the Medium model. If true, use simplified cp=const approx";
+	constant Boolean with_isothermal_backwall = false "If true, fix the backwall temperature to uniform value (controlled cooling)";
+	constant Boolean with_uniform_curtain_props = false "If true, ignore effect of phi_c on curtain emi/abs/tau";
 	constant SI.SpecificHeatCapacity cp_s = 1200. "solid specific heat capacity [J/kg-K]";
 
 	//Discretisation
