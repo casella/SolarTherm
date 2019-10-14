@@ -66,7 +66,7 @@ model ParticleReceiver1D_standalone "Falling particle flow and energy model"
 	parameter SI.Pressure p_des = from_bar(1) "Design pressure, Pa";
 	parameter SI.Velocity v_s_in = 0.25 "Inlet curtain velocity [m/s]";
 	parameter Real AR = 1 "Receiver aspect ratio";
-	parameter SI.Angle theta_c = from_deg(0.) "representative angle of rays incident on the particle screen";
+	parameter SI.Angle theta_c = from_deg(0.) "representative angle of rays incident on the particle screen (0=normal)";
 
 	// Receiver geometry
 	SI.Length t_c_in (start=1887.76/(0.6*1200*0.25*24.37)) "Curtain thicknesss at the inlet";

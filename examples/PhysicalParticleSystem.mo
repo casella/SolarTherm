@@ -196,10 +196,10 @@ model PhysicalParticleSystem
 	//parameter SI.Area A_land = land_mult*A_field + 197434.207385281 "Land area";
 	parameter SI.Area A_land = 0 "Land area";
 
-	parameter SI.SpecificEnthalpy h_cold_set = Medium.specificEnthalpy(state_cold_set) "Cold particles specific enthalpy at design";  
+	parameter SI.SpecificEnthalpy h_cold_set = Medium.specificEnthalpy(state_cold_set) "Cold particles specific enthalpy at design";
 	parameter SI.SpecificEnthalpy h_hot_set = Medium.specificEnthalpy(state_hot_set) "Hot particles specific enthalpy at design";
 
-	parameter SI.SpecificEnthalpy h_co2_in_set = Medium.specificEnthalpy(state_co2_in_set) "Cold CO2 specific enthalpy at design";  
+	parameter SI.SpecificEnthalpy h_co2_in_set = Medium.specificEnthalpy(state_co2_in_set) "Cold CO2 specific enthalpy at design";
 	parameter SI.SpecificEnthalpy h_co2_out_set = Medium.specificEnthalpy(state_co2_out_set) "Hot CO2 specific enthalpy at design";
 
 	parameter SI.Density rho_cold_set = Medium.density(state_cold_set) "Cold particles density at design";
@@ -232,6 +232,7 @@ model PhysicalParticleSystem
 	parameter Real r_disc = 0.0439 "Real discount rate";
 	parameter Real r_i = 0.025 "Inflation rate";
 
+	// FIXME perhaps these don't need to be integers?
 	parameter Integer t_life(unit = "year") = 30 "Lifetime of plant";
 	parameter Integer t_cons(unit = "year") = 2 "Years of construction";
 
@@ -248,9 +249,11 @@ model PhysicalParticleSystem
 	parameter Real idx_pri_tower = 1.9174 "Tower cost scaling index";
 	parameter Real pri_lift = if currency==Currency.USD then 58.37 else 58.37/r_cur "Lift cost per rated mass flow per height";
 	parameter FI.AreaPrice pri_receiver = if currency==Currency.USD then 37400 else 37400/r_cur "Falling particle receiver cost per design aperture area";
-	parameter FI.EnergyPrice pri_storage = if currency==Currency.USD then 17.70 / (1e3 * 3600) else (17.70 / (1e3 * 3600))/r_cur "Storage cost per energy capacity";
+
+	// FIXME storage cost should be based on the bin geometry and (somehow) on cost of tank materials
+	parameter FI.EnergyPrice pri_storage = if currency==Currency.USD then 17.90 / (1e3 * 3600) else (17.90 / (1e3 * 3600))/r_cur "Storage cost per energy capacity";
 	parameter FI.MassPrice pri_particle = 1.0 "Unit cost of particles per kg";
-	parameter FI.PowerPrice pri_hx = if currency==Currency.USD then (175.90/1e3) else (175.90/1e3)/r_cur "Heat exchnager cost per energy capacity";
+	parameter FI.PowerPrice pri_hx = if currency==Currency.USD then (175./1e3) else (175./1e3)/r_cur "Heat exchnager cost per energy capacity";
 	parameter FI.PowerPrice pri_block = if currency==Currency.USD then 600 / 1e3 else 600/r_cur "Power block cost per gross rated power";
 	//parameter FI.PowerPrice pri_bop = if currency==Currency.USD then 340 / 1e3 else (340 / 1e3)/r_cur "Balance of plant cost per gross rated power"; // Based on downselection criteria criteria
 	parameter FI.PowerPrice pri_bop = if currency==Currency.USD then 0 / 1e3 else (0 / 1e3)/r_cur "Balance of plant cost per gross rated power";
