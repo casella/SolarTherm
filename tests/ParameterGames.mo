@@ -1,4 +1,5 @@
-model SillyReceiver
+
+block SillyReceiver
 
 	// to be supplied by the user:
 	parameter Real H "receiver height";
@@ -19,16 +20,16 @@ model SillyReceiver
 
 	// Todo: add variables
 	Real eta(min=0, max=1);
-	Real G "DNI";
-	Real CR "concentration ratio";
+	input Real G "DNI";
+	input Real CR "concentration ratio";
 	constant Real sig = 5.67e-8;
 
 	Real T "temperature (passed from outside)";
-	Real T_ext "temperature (internal working value)";
+	input Real T_ext "temperature (internal working value)";
 	parameter Real T_des = 800. "design-point temperature";
 
-	Real Qnet "energy to working fluid";
-	Real Qinc "incident solar flux";
+	output Real Qnet "energy to working fluid";
+	output Real Qinc "incident solar flux";
 
 	Real Qnet_des(fixed=true) "design-point energy to working fluid";
 
@@ -76,4 +77,5 @@ model ParameterGames
 equation
 	T = 298.15 + 400 + 400 *sin(time/(24*3600.) * 2*CO.pi);
 	der(E) = R1.Qnet;
+annotation(experiment(StartTime=0, StopTime=604800, Tolerance=1e-6));
 end ParameterGames;
