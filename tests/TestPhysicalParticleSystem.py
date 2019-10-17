@@ -30,8 +30,11 @@ class TestPhysicalParticleSystem(unittest.TestCase):
 		self.res = postproc.SimResultElec(resfn)
 		self.perf = self.res.calc_perf()
 
+		def gettmax(n):
+			return self.res.get_time(n)[-1]
+
 		def getval(n,u=False):
-			v = self.res.interpolate(n,1)
+			v = self.res.interpolate(n,gettmax(n))
 			if u:
 				u1 = self.res.get_unit(n)
 				return v,u1
@@ -44,7 +47,7 @@ class TestPhysicalParticleSystem(unittest.TestCase):
 		if VERBOSE:
 			print "\nRESULTS\n-------"
 			print "\nDesign parameters"
-			for n in ['H_tower','P_elec','SM','t_storage']:
+			for n in ['Q_flow_des','H_tower','P_gross','SM','t_storage','A_field']:
 				v,u = getval(n,u=True)
 				print '%s = %f %s'%(n,v,u)
 			print 'ΔT_storage = %f °C' % (getval('T_hot_set')-getval('T_cold_set'))
@@ -59,10 +62,9 @@ class TestPhysicalParticleSystem(unittest.TestCase):
 			n = 'pri_storage'; print '%s = %f %s'%(n,getval(n)*3.6e6,"USD/kJ")
 
 			print "\nCapital costs"
-			for n in ['C_receiver','C_storage','C_hx','C_field','C_cap']:
-				#print '%s = %f M USD'%(v,getval(v)/1e6)
-				v,u = getval(n,u=True)
-				print '%s = %f %s'%(n,v,u)
+			for n in ['C_tower','C_receiver','C_storage','C_hx','C_field','C_cap']:
+				print '%s = %f M USD'%(n,getval(n)/1e6)
+				#v,u = getval(n,u=True)
 
 			print "\nHigh-level metrics"
 			for n in ['lcoe','epy','capf']:
@@ -72,6 +74,7 @@ class TestPhysicalParticleSystem(unittest.TestCase):
 		# Note these are set to the values for what is thought to be a working
 		# version.  They are not validated against anything or independently
 		# calculated.
+		self.assertAlmostEqual(getval('A_field'),1.473e6,delta=2e3);
 		self.assertEqual(getval('SM'),2.5)
 		self.assertAlmostEqual(getval('T_hot_set')-getval('T_cold_set'),219.7,delta=0.01) # K
 		self.assertEqual(getval('t_storage'),14) # h

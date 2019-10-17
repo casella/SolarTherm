@@ -50,7 +50,7 @@ model PhysicalParticleSystem
 	parameter SI.Area A_heliostat = 100 "Heliostat module reflective area";
 	parameter Real he_av_design = 0.99 "Helisotats availability";
 
-	parameter SI.Efficiency eff_opt = 0.433 "Field optical efficiency at design point";
+	parameter SI.Efficiency eff_opt(fixed=false) "Field optical efficiency at design point";
 	parameter SI.Irradiance dni_des = 788.8 "DNI at design point";
 	parameter Real C = 1200 "Instantaneous area-average flux concentration ratio"; //Definition from Lifeng Li et al. (2016) "Optics of solar central receiver systems: a review"
 
@@ -69,7 +69,7 @@ model PhysicalParticleSystem
 	parameter SI.CoefficientOfHeatTransfer h_th_rec = 100 "Receiver heat tranfer coefficient";
 
 
-	parameter SI.RadiantPower R_des(fixed= if fixed_field then true else false) "Input power to receiver at design point";
+	parameter SI.RadiantPower R_des(fixed=false) "Input power to receiver at design point";
 
 	parameter Real rec_fr = 0.0 "Receiver loss fraction of radiance at design point";
 	parameter SI.Temperature rec_T_amb_des = 298.15 "Ambient temperature at design point";
@@ -117,7 +117,7 @@ model PhysicalParticleSystem
 	parameter SI.Temperature T_comp_in = 318.15 "Compressor inlet temperature at design";
 	replaceable model Cooling = Models.PowerBlocks.Cooling.DryCooling "PB cooling model";
 
-	parameter SI.Power P_gross(fixed = if fixed_field then false else true) = 100.0e06 "Power block gross rating at design point";
+	parameter SI.Power P_gross(fixed=false) "Power block gross rating at design point";
 
 	parameter SI.Efficiency eff_blk = 0.502 "Power block efficiency at design point";
 
@@ -190,7 +190,7 @@ model PhysicalParticleSystem
 
 	parameter SI.Area A_receiver = R_des/C/dni_des "Receiver aperture area";
 	parameter SI.Length H_receiver = sqrt(A_receiver * ar_rec) "Receiver aperture height";
-	parameter SI.Length W_receiver = A_receiver / H_receiver "Receiver aperture width";
+	parameter SI.Length W_receiver(fixed=false) "Receiver aperture width";
 	parameter SI.Length L_receiver = 1 "Receiver length(depth)";
 
 	//parameter SI.Area A_land = land_mult*A_field + 197434.207385281 "Land area";
@@ -222,15 +222,15 @@ model PhysicalParticleSystem
 	parameter SI.Diameter D_storage = H_storage/tank_ar "Storage tank diameter";
 	parameter SI.Area SA_storage = CN.pi * D_storage * H_storage "Storage tank surface area";
 
-	parameter SI.Length H_tower = 0.154*(sqrt(twr_ht_const*(A_field/(gnd_cvge*excl_fac))/CN.pi)) "Tower height"; // A_field/(gnd_cvge*excl_fac) is the field gross area
+	parameter SI.Length H_tower(fixed=false) "Tower height"; // A_field/(gnd_cvge*excl_fac) is the field gross area
 	parameter SI.Diameter D_tower = W_receiver "Tower diameter"; // That's a fair estimate. An accurate H-to-D correlation may be used.
 
 	parameter SI.TemperatureDifference LMTD_des = ((T_hot_set-T_out_ref_co2)-(T_cold_set-T_in_ref_co2))/(Math.log((T_hot_set-T_out_ref_co2)/(T_cold_set-T_in_ref_co2))) "Particle heat exchnager LMTD at design";
 	parameter SI.Area A_hx = Q_flow_des / (U_hx*LMTD_des) "Heat transfer surface area of the particle heat exchanger";
 
 	// Cost data in USD (default) or AUD
-	parameter Real r_disc = 0.0439 "Real discount rate";
-	parameter Real r_i = 0.025 "Inflation rate";
+	parameter Real r_disc = 0.07 "Real discount rate";
+	//parameter Real r_i = 0.025 "Inflation rate";
 
 	// FIXME perhaps these don't need to be integers?
 	parameter Integer t_life(unit = "year") = 30 "Lifetime of plant";
@@ -352,8 +352,9 @@ model PhysicalParticleSystem
 		nu_min = nu_min_sf,
 		Q_design = Q_flow_defocus,
 		nu_start = nu_start,
-		redeclare model Optical = Models.CSP.CRS.HeliostatsField.Optical.Table(angles = angles, file = opt_file)) annotation(
-																																									Placement(transformation(extent = {{-88, 2}, {-56, 36}})));
+		redeclare model Optical = Models.CSP.CRS.HeliostatsField.Optical.Table(angles = angles, file = opt_file)
+		//redeclare model Optical = Models.CSP.CRS.HeliostatsField.Optical.Constant(k=eff_opt)
+	) annotation(Placement(transformation(extent = {{-88, 2}, {-56, 36}})));
 
 	// Receiver
 	Models.CSP.CRS.Receivers.ParticleReceiver receiver(
@@ -497,12 +498,19 @@ model PhysicalParticleSystem
 
 initial equation
 	if fixed_field then
-		P_gross = Q_flow_des * eff_cyc;
+		H_tower = 200;
+		R_des = 497.69e6;
+		P_gross = Q_flow_des * eff_blk;
+		eff_opt = 0.5;
 	else
+		eff_opt = 0.433; // FIXME not clear where this comes from.
+		H_tower = 0.154*(sqrt(twr_ht_const*(A_field/(gnd_cvge*excl_fac))/CN.pi));
+		P_gross = 100e6;
 		R_des = if match_sam then SM*Q_flow_des*(1 + rec_fr) else SM*Q_flow_des/(1 - rec_fr);
 	end if;
 
-	equation
+	W_receiver * H_receiver = A_receiver;
+equation
 	//Connections from data
 	connect(DNI_input.y, sun.dni) annotation(
 												Line(points = {{-119, 70}, {-102, 70}, {-102, 69.8}, {-82.6, 69.8}}, color = {0, 0, 127}, pattern = LinePattern.Dot));
