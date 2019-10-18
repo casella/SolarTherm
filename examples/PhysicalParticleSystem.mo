@@ -15,11 +15,12 @@ model PhysicalParticleSystem
 	//TODO Incorporate Modelica HX model
 	//TODO Use Coolprop for SCO2 props
 	//TODO Re-train the sCO2 cycle for the particle medium and new setpoint temperatures
+	//TODO fix Carbo HSP properties so there are never imaginary roots when solving for T.
 
 	// Input Parameters
 	// *********************
 	parameter Boolean match_sam = false "Configure to match SAM output";
-	parameter Boolean fixed_field = false "true if the size of the solar field is fixed";
+	parameter Boolean fixed_field = true "true if the size of the solar field is fixed";
 
 	replaceable package Medium = SolarTherm.Media.SolidParticles.CarboHSP_ph "Medium props for Carbo HSP 40/70";
 	//TODO add a new medium for sCO2
@@ -43,12 +44,12 @@ model PhysicalParticleSystem
 	parameter String opt_file = Modelica.Utilities.Files.loadResource("modelica://SolarTherm/Data/Optics/g3p3_opt_eff_2.motab");
 	parameter Solar_angles angles = Solar_angles.ele_azi "Angles used in the lookup table file";
 
-	parameter Real SM = 2.5 "Solar multiple";
+	parameter Real SM(fixed=false) "Solar multiple";
 	parameter Real land_mult = 0 "Land area multiplier";
 
 	parameter Boolean polar = true "True for polar field layout, otherwise surrounded";
 	parameter SI.Area A_heliostat = 100 "Heliostat module reflective area";
-	parameter Real he_av_design = 0.99 "Helisotats availability";
+	parameter Real he_av_des = 1.00 "Helisotats availability "; // FIXME should be 0.99 or so
 
 	parameter SI.Efficiency eff_opt(fixed=false) "Field optical efficiency at design point";
 	parameter SI.Irradiance dni_des = 788.8 "DNI at design point";
@@ -68,10 +69,13 @@ model PhysicalParticleSystem
 
 	parameter SI.CoefficientOfHeatTransfer h_th_rec = 100 "Receiver heat tranfer coefficient";
 
-
 	parameter SI.RadiantPower R_des(fixed=false) "Input power to receiver at design point";
+	parameter SI.HeatFlowRate Q_rec_des(fixed=false) "Receiver net thermal power (heat into particles) at design point";
 
-	parameter Real rec_fr = 0.0 "Receiver loss fraction of radiance at design point";
+	// FIXME clarify the definition of this one:
+	//parameter Real rec_fr = 0.0 "Receiver loss fraction of radiance at design point";
+	parameter SI.Efficiency eta_rec_th_des = 0.8568 "Receiver thermal efficiency (Q_pcl / Q_sol)";
+
 	parameter SI.Temperature rec_T_amb_des = 298.15 "Ambient temperature at design point";
 
 	parameter Real f_loss = 0.000001 "Fraction of particles flow lost in receiver";
@@ -119,7 +123,7 @@ model PhysicalParticleSystem
 
 	parameter SI.Power P_gross(fixed=false) "Power block gross rating at design point";
 
-	parameter SI.Efficiency eff_blk = 0.502 "Power block efficiency at design point";
+	parameter SI.Efficiency eff_blk = 0.5023 "Power block efficiency at design point";
 
 	parameter Real par_fr = 0 "Parasitics fraction of power block rating at design point";
 	parameter Real par_fix_fr = 0 "Fixed parasitics as fraction of gross rating";
@@ -157,7 +161,7 @@ model PhysicalParticleSystem
 	parameter Boolean use_wind = true "True if using wind stopping strategy in the solar field";
 	parameter SI.Velocity Wspd_max = 15.65 if use_wind "Wind stow speed";
 
-	parameter SI.HeatFlowRate Q_flow_defocus = if match_sam then Q_flow_des*(1 + rec_fr) else Q_flow_des/(1 - rec_fr) "Solar field thermal power at defocused state";
+	parameter SI.HeatFlowRate Q_flow_defocus(fixed=false) "Solar field thermal power at partly-defocused state (when storage is full)";
 
 	parameter Real nu_start=0.6 "Minimum energy start-up fraction to start the receiver";
 	parameter Real nu_min_sf=0.3 "Minimum turn-down energy fraction to stop the receiver";
@@ -179,13 +183,11 @@ model PhysicalParticleSystem
 	parameter Real Kp = -1000 "Gain of proportional component in receiver control";
 
 	// Calculated Parameters
-	parameter SI.HeatFlowRate Q_flow_des =
-		if fixed_field then (if match_sam then R_des/((1 + rec_fr)*SM)
-			else R_des*(1 - rec_fr) / SM) else P_gross/eff_blk "Heat to power block at design";
+	parameter SI.HeatFlowRate Q_blk_des(fixed=false) "Heat to power block at design";
 
-	parameter SI.Energy E_max = t_storage * 3600 * Q_flow_des "Maximum tank stored energy";
+	parameter SI.Energy E_max = t_storage * 3600 * Q_blk_des "Maximum tank stored energy";
 
-	parameter SI.Area A_field = (R_des/eff_opt/he_av_design)/dni_des "Heliostat field reflective area";
+	parameter SI.Area A_field(fixed=false) "Heliostat field reflective area";
 	parameter Integer n_heliostat = integer(ceil(A_field/A_heliostat)) "Number of heliostats";
 
 	parameter SI.Area A_receiver = R_des/C/dni_des "Receiver aperture area";
@@ -208,12 +210,12 @@ model PhysicalParticleSystem
 	parameter SI.Mass m_max = E_max/(h_hot_set - h_cold_set) "Max particles mass in tanks";
 	parameter SI.Volume V_max = m_max/((rho_hot_set + rho_cold_set)/2) "Max particles volume in tanks";
 
-	parameter SI.MassFlowRate m_flow_fac = SM*Q_flow_des/(h_hot_set - h_cold_set) "Mass flow rate to receiver at design point";
+	parameter SI.MassFlowRate m_flow_fac = SM*Q_blk_des/(h_hot_set - h_cold_set) "Mass flow rate to receiver at design point";
 	parameter SI.MassFlowRate m_flow_rec_min = 0 "Minimum mass flow rate to receiver";
 	parameter SI.MassFlowRate m_flow_rec_max = 1.3 * m_flow_fac "Maximum mass flow rate to receiver";
 	parameter SI.MassFlowRate m_flow_rec_start = 0.8 * m_flow_fac "Initial or guess value of mass flow rate to receiver in the feedback controller";
-	parameter SI.MassFlowRate m_flow_blk = Q_flow_des/(h_hot_set - h_cold_set) "Mass flow rate to power block at design point";
-	parameter SI.MassFlowRate m_flow_co2 = Q_flow_des/(h_co2_out_set - h_co2_in_set) "Mass flow rate to power block at design point";
+	parameter SI.MassFlowRate m_flow_blk = Q_blk_des/(h_hot_set - h_cold_set) "Mass flow rate to power block at design point";
+	parameter SI.MassFlowRate m_flow_co2 = Q_blk_des/(h_co2_out_set - h_co2_in_set) "Mass flow rate to power block at design point";
 
 	parameter SI.Power P_net = (1 - par_fr)*P_gross "Power block net rating at design point";
 	parameter SI.Power P_name = P_net "Nameplate rating of power block";
@@ -226,7 +228,7 @@ model PhysicalParticleSystem
 	parameter SI.Diameter D_tower = W_receiver "Tower diameter"; // That's a fair estimate. An accurate H-to-D correlation may be used.
 
 	parameter SI.TemperatureDifference LMTD_des = ((T_hot_set-T_out_ref_co2)-(T_cold_set-T_in_ref_co2))/(Math.log((T_hot_set-T_out_ref_co2)/(T_cold_set-T_in_ref_co2))) "Particle heat exchnager LMTD at design";
-	parameter SI.Area A_hx = Q_flow_des / (U_hx*LMTD_des) "Heat transfer surface area of the particle heat exchanger";
+	parameter SI.Area A_hx = Q_blk_des / (U_hx*LMTD_des) "Heat transfer surface area of the particle heat exchanger";
 
 	// Cost data in USD (default) or AUD
 	parameter Real r_disc = 0.07 "Real discount rate";
@@ -263,7 +265,9 @@ model PhysicalParticleSystem
 	parameter Real pri_om_prod(unit = "$/J/year") = if currency==Currency.USD then 0 / (1e6 * 3600) else (0 / (1e6 * 3600))/r_cur "Variable O&M cost per production per year";
 
 	parameter FI.Money C_field = A_field * pri_field "Field cost";
-	parameter FI.Money C_site = A_field * pri_site "Site improvements cost";
+	parameter FI.Money C_site = A_field * pri_site "Site preparation cost";
+	parameter FI.Money C_field_total = C_field + C_site "Heliostat field plus site preparation costs";
+
 	parameter FI.Money C_tower = pri_tower * (H_tower ^ idx_pri_tower) "Tower cost";
 
 	parameter FI.Money C_lift_rec = pri_lift * dh_liftRC * m_flow_fac "Receiver lift cost";
@@ -271,17 +275,24 @@ model PhysicalParticleSystem
 	parameter FI.Money C_lift_cold = pri_lift * dh_LiftCold * m_flow_blk "Cold storage tank lift cost";
 
 	parameter FI.Money C_fpr = pri_receiver*A_receiver "Falling particle receiver cost";
-	parameter FI.Money C_receiver = C_fpr + C_tower + C_lift_rec "Total receiver cost";
+	parameter FI.Money C_receiver = C_fpr + C_tower + C_lift_rec "Total receiver cost (particle receiver, tower, particle lift)";
 
 	parameter FI.Money C_bins = FI.particleBinCost(T_hot_set)*SA_storage + FI.particleBinCost(T_cold_set)*SA_storage "Cost of cold and hot storage bins";
 	parameter FI.Money C_particles = (1+NS_particle)*pri_particle*m_max "Cost of particles";
+
+	// FIXME m_s_annual in following equation is a hardwired 'magic number'. TODO Implement calculation of this value.
 	parameter FI.Money C_storage = C_bins + C_particles + C_lift_hx + C_lift_cold + (f_loss*t_life*pri_particle*1.753e10) "Total storage cost";
-	parameter FI.Money C_hx = Q_flow_des * pri_hx "Heat exchanger cost"; // TODO Should be updated based on Eq. 11 in Albrecht et al's ASME conference paper draft
-	parameter FI.Money C_block = P_gross * pri_block "Power block cost"; // TODO Should be updated based on Eq. 17 in Albrecht et al's ASME conference paper draft
+
+	parameter FI.Money C_hx = Q_blk_des * pri_hx "Heat exchanger cost"; // TODO Should be updated based on Eq. 11 in Albrecht et al's ASME conference paper draft
+	parameter FI.Money C_pb = P_gross * pri_block "Power block cost"; // TODO Should be updated based on Eq. 17 in Albrecht et al's ASME conference paper draft
 	parameter FI.Money C_bop = (P_gross * pri_bop) "Balance of plant cost";
+
 	parameter FI.Money C_land = A_land * pri_land "Land cost";
 
-	parameter FI.Money C_cap = ((C_field + C_site + C_receiver + C_storage + C_hx + C_block + C_bop) * (1+r_contg)) * (1+r_indirect) * (1+r_cons) + C_land "Capital costs";
+	parameter FI.Money C_cap_total = C_field_total + C_receiver + C_storage + C_hx + C_pb + C_bop "Total of raw capital costs";
+
+	parameter FI.Money C_cap = ((C_cap_total) * (1+r_contg)) * (1+r_indirect) * (1+r_cons) + C_land
+	 	"Capital costs including contingency, indirect costs, construction costs and land costs";
 
 	parameter FI.MoneyPerYear C_year = P_name * pri_om_name "Fixed O&M cost per year";
 	parameter Real C_prod(unit="$/J/year") = pri_om_prod "Variable O&M cost per production per year";
@@ -344,7 +355,7 @@ model PhysicalParticleSystem
 		ele_min(displayUnit = "deg") = ele_min,
 		use_wind = use_wind,
 		Wspd_max = Wspd_max,
-		he_av = he_av_design,
+		he_av = he_av_des,
 		use_on = true,
 		use_defocus = true,
 		A_h = A_heliostat,
@@ -353,7 +364,7 @@ model PhysicalParticleSystem
 		Q_design = Q_flow_defocus,
 		nu_start = nu_start,
 		redeclare model Optical = Models.CSP.CRS.HeliostatsField.Optical.Table(angles = angles, file = opt_file)
-		//redeclare model Optical = Models.CSP.CRS.HeliostatsField.Optical.Constant(k=eff_opt)
+		//redeclare model Optical = Models.CSP.CRS.HeliostatsField.Optical.Constant(k=0.5) /* FIXME CRASHES!!! issue with imag roots of pcl props */
 	) annotation(Placement(transformation(extent = {{-88, 2}, {-56, 36}})));
 
 	// Receiver
@@ -479,7 +490,7 @@ model PhysicalParticleSystem
 		nu_net = nu_net_blk,
 		T_in_ref = T_in_ref_blk,
 		T_out_ref = T_out_ref_blk,
-		Q_flow_ref = Q_flow_des,
+		Q_flow_ref = Q_blk_des,
 		redeclare model Cooling = Cooling(T_co=T_comp_in)) annotation(
 										Placement(transformation(extent = {{88, 4}, {124, 42}})));
 
@@ -498,16 +509,29 @@ model PhysicalParticleSystem
 
 initial equation
 	if fixed_field then
+		/* FIXME 'fixed field' mode should assume fixed R_des, and load a pre-defined
+		 optical efficiency (at design point, and an optical efficiency lookup
+		 table OELT */
 		H_tower = 200;
-		R_des = 497.69e6;
-		P_gross = Q_flow_des * eff_blk;
+		A_field = 1.473e6;
 		eff_opt = 0.5;
+		//R_des = 497.69e6;
+		SM = 2.5;
+		//P_gross = 100e6;
 	else
-		eff_opt = 0.433; // FIXME not clear where this comes from.
-		H_tower = 0.154*(sqrt(twr_ht_const*(A_field/(gnd_cvge*excl_fac))/CN.pi));
+		SM = 2.5;
 		P_gross = 100e6;
-		R_des = if match_sam then SM*Q_flow_des*(1 + rec_fr) else SM*Q_flow_des/(1 - rec_fr);
+		// FIXME 'free field' mode should use fixed power block to suggest field size
+		// 'free field' should also trigger ray-tracing simulations.
+		eff_opt = 0.433; // FIXME not clear where this comes from... averaged from solarpilot?
+		H_tower = 0.154*(sqrt(twr_ht_const*(A_field/(gnd_cvge*excl_fac))/CN.pi));
+		//R_des =  P_gross/eff_blk; /* unsure why this equation has this form... */
 	end if;
+	dni_des * A_field * eff_opt * eta_rec_th_des * he_av_des = Q_rec_des;
+	Q_rec_des = Q_blk_des * SM;
+	P_gross = Q_blk_des * eff_blk;
+	R_des = Q_rec_des/eta_rec_th_des; // FIXME check the 'match_sam' issue again here.
+	Q_flow_defocus = Q_blk_des/eta_rec_th_des; // FIXME check the 'match_sam' issue again here.
 
 	W_receiver * H_receiver = A_receiver;
 equation

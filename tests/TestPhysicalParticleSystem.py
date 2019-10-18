@@ -47,7 +47,9 @@ class TestPhysicalParticleSystem(unittest.TestCase):
 		if VERBOSE:
 			print "\nRESULTS\n-------"
 			print "\nDesign parameters"
-			for n in ['Q_flow_des','H_tower','P_gross','SM','t_storage','A_field']:
+			for n in ['Q_rec_des','Q_blk_des','P_gross','P_net','P_name']:
+				print '%s = %f MW' % (n,getval(n)/1e6)
+			for n in ['H_tower','SM','t_storage','A_field']:
 				v,u = getval(n,u=True)
 				print '%s = %f %s'%(n,v,u)
 			print 'ΔT_storage = %f °C' % (getval('T_hot_set')-getval('T_cold_set'))
@@ -62,7 +64,7 @@ class TestPhysicalParticleSystem(unittest.TestCase):
 			n = 'pri_storage'; print '%s = %f %s'%(n,getval(n)*3.6e6,"USD/kJ")
 
 			print "\nCapital costs"
-			for n in ['C_tower','C_receiver','C_storage','C_hx','C_field','C_cap']:
+			for n in ['C_hx','C_receiver','C_storage','C_field_total','C_pb','C_cap_total','C_cap']:
 				print '%s = %f M USD'%(n,getval(n)/1e6)
 				#v,u = getval(n,u=True)
 
@@ -75,7 +77,11 @@ class TestPhysicalParticleSystem(unittest.TestCase):
 		# version.  They are not validated against anything or independently
 		# calculated.
 		self.assertAlmostEqual(getval('A_field'),1.473e6,delta=2e3);
-		self.assertEqual(getval('SM'),2.5)
+		self.assertEqual(getval('SM'),2.5);
+		self.assertEqual(getval('eff_blk'),0.5023);
+		self.assertAlmostEqual(getval('P_name'),100e6,delta=0.1e6);
+		self.assertAlmostEqual(getval('Q_blk_des'),199.076e6,delta=1e6);
+		self.assertAlmostEqual(getval('Q_rec_des'),497.69e6,delta=1e6);
 		self.assertAlmostEqual(getval('T_hot_set')-getval('T_cold_set'),219.7,delta=0.01) # K
 		self.assertEqual(getval('t_storage'),14) # h
 		self.assertEqual(getval('pri_field'), 75) # USD/m²
@@ -86,7 +92,7 @@ class TestPhysicalParticleSystem(unittest.TestCase):
 		self.assertEqual(getval('r_indirect'),0.13);
 		self.assertEqual(getval('r_contg'),0.1);
 		self.assertEqual(getval('r_disc'),0.07);
-
+		self.assertAlmostEqual(getval('C_cap_total'),317.2e6,delta=1e6);
 
 		#self.assertAlmostEqual(self.perf[0], 430309.98, 2) # epy
 		self.assertAlmostEqual(getperf('lcoe')[0], 59.19, delta=2) # USD/MWh
