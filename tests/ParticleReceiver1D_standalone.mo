@@ -32,7 +32,7 @@ model ParticleReceiver1D_standalone "Falling particle flow and energy model"
 	constant SI.SpecificHeatCapacity cp_s = 1200. "solid specific heat capacity [J/kg-K]";
 
 	//Discretisation
-	parameter Integer N = 10 "Number of vertical elements";
+	parameter Integer N = 20 "Number of vertical elements";
 
 	// temperature used to initialise screen
 	parameter SI.Temperature T_ref = from_degC(580.3);

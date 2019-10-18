@@ -16,7 +16,12 @@ model ParticleReceiver
 	parameter Boolean const_alpha = true "If true then constant convective heat transfer coefficient";
 	parameter SI.CoefficientOfHeatTransfer alpha=1 if const_alpha "Convective heat transfer coefficient";
 
+	// this object represents the state of the particles in the curtain:
 	Medium.BaseProperties medium;
+
+	// from ReceiverFluid and Receiver, we inherit
+	//   * fluid_a, fluid_b (inlet and outlet ports)
+	//   * heat (heat port, supply of heat to the receiver)
 
 	SI.SpecificEnthalpy h_in "Specific enthalpy at inlet";
 	SI.SpecificEnthalpy h_out(start=h_0) "Specific enthalpy at outlet";
@@ -53,29 +58,29 @@ protected
 	Medium.ThermodynamicState state_out=Medium.setState_phX(fluid_b.p,h_out);
 
 equation
-	medium.h=(h_in+h_out)/2;
+	medium.h=(h_in+h_out)/2; // temperature for thermal losses = average of inlet and outlet pcl temperatures
 	h_in=inStream(fluid_a.h_outflow);
 	fluid_b.h_outflow=max(h_0,h_out);
 	fluid_a.h_outflow=0;
 
 	heat.T=medium.T;
-	fluid_b.m_flow=-fluid_a.m_flow;
-	fluid_a.p=medium.p;
+	fluid_b.m_flow=-fluid_a.m_flow; // mass conservation
+	fluid_a.p=medium.p; // no pressure drops (it should all be ambient pressure)
 	fluid_b.p=medium.p;
 
-	Q_rad=A*sigma*em*(medium.T^4-Tamb^4);
-	Q_con=A*alpha*(medium.T-Tamb);
+	Q_rad=A*sigma*em*(medium.T^4-Tamb^4); // radiative losses
+	Q_con=A*alpha*(medium.T-Tamb); // convective losses
 
 	if on then
 		Q_loss=-Q_rad-Q_con;
 	else
-		Q_loss=0;
+		Q_loss=0; // when the receiver is 'off', assume no thermal losses
 	end if;
 
+	// energy balance: mdot(h_out - h_in) = Q_abs - Q_loss, with some handling of low flow
 	0=ab*heat.Q_flow+Q_loss+max(1e-3,fluid_a.m_flow)*(h_in-h_out);
 	Q_rcv=fluid_a.m_flow*(h_out-h_in);
 	eff=max(Q_rcv, 0)/max(1,heat.Q_flow);
-
 
 	annotation (Documentation(info="<html>
 </html>", revisions="<html>
