@@ -50,7 +50,7 @@ model ParticleReceiver
 	Real eff;
 
 protected
-	parameter SI.Temperature T_0=from_degC(290) "Start value of temperature";
+	parameter SI.Temperature T_0=from_degC(580.3) "Start value of temperature";
 	parameter Medium.ThermodynamicState state_0=Medium.setState_pTX(1e5,T_0);
 	parameter SI.SpecificEnthalpy h_0=Medium.specificEnthalpy(state_0);
 
@@ -78,7 +78,7 @@ equation
 	end if;
 
 	// energy balance: mdot(h_out - h_in) = Q_abs - Q_loss, with some handling of low flow
-	0=ab*heat.Q_flow+Q_loss+max(1e-3,fluid_a.m_flow)*(h_in-h_out);
+	0=ab*heat.Q_flow+Q_loss+fluid_a.m_flow*(h_in-h_out);
 	Q_rcv=fluid_a.m_flow*(h_out-h_in);
 	eff=max(Q_rcv, 0)/max(1,heat.Q_flow);
 
