@@ -37,7 +37,7 @@ model ReceiverControl
     annotation (Placement(transformation(extent={{-130,-80},{-90,-40}})));
   Modelica.Blocks.Interfaces.RealInput T_mea
     annotation (Placement(transformation(extent={{-130,40},{-90,80}})));
-  Level2Logic hotTankLogic(level_max=30, level_min=L_off)
+  Level2Logic hotTankLogic(level_max=L_on, level_min=L_off)
     annotation (Placement(transformation(extent={{-74,-10},{-54,10}})));
   Modelica.Blocks.Logical.And and1
     annotation (Placement(transformation(extent={{-34,-22},{-14,-2}})));
