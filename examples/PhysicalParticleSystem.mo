@@ -41,7 +41,7 @@ model PhysicalParticleSystem
 	parameter Integer year = 1996 "Meteorological year";
 
 	// Field
-	parameter String opt_file = Modelica.Utilities.Files.loadResource("modelica://SolarTherm/Data/Optics/g3p3_opt_eff_2.motab");
+	parameter String opt_file = Modelica.Utilities.Files.loadResource("modelica://SolarTherm/Data/Optics/g3p3_opt_eff_1.motab");
 	parameter Solar_angles angles = Solar_angles.ele_azi "Angles used in the lookup table file";
 
 	parameter Real SM(fixed=false) "Solar multiple";
@@ -212,7 +212,7 @@ model PhysicalParticleSystem
 
 	parameter SI.MassFlowRate m_flow_fac = SM*Q_blk_des/(h_hot_set - h_cold_set) "Mass flow rate to receiver at design point";
 	parameter SI.MassFlowRate m_flow_rec_min = 0 "Minimum mass flow rate to receiver";
-	parameter SI.MassFlowRate m_flow_rec_max = 1.3 * m_flow_fac "Maximum mass flow rate to receiver";
+	parameter SI.MassFlowRate m_flow_rec_max = 1.5 * m_flow_fac "Maximum mass flow rate to receiver";
 	parameter SI.MassFlowRate m_flow_rec_start = 0.8 * m_flow_fac "Initial or guess value of mass flow rate to receiver in the feedback controller";
 	parameter SI.MassFlowRate m_flow_blk = Q_blk_des/(h_hot_set - h_cold_set) "Mass flow rate to power block at design point";
 	parameter SI.MassFlowRate m_flow_co2 = Q_blk_des/(h_co2_out_set - h_co2_in_set) "Mass flow rate to power block at design point";
