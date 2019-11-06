@@ -1,6 +1,6 @@
 within SolarTherm.Models.CSP.CRS.Receivers;
 model PlateRC "Single element plate receiver with fluid interface"
-	extends SolarTherm.Models.CSP.CRS.Receivers.FluidRC(port_b.h_outflow(start=0.0));
+	extends SolarTherm.Models.CSP.CRS.Receivers.FluidRC(port_b.h_outflow(start=800000));
 	// port_b.h_outflow is used as iteration variable, so we should find a good
 	// initial guess for it.  Setting to zero here to silence warning.
 	import SI = Modelica.SIunits;

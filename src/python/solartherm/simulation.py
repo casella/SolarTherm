@@ -336,6 +336,7 @@ class Simulator(object):
 			'-override',
 			'startTime='+start+',stopTime='+stop+',stepSize='+step,
 			'-s', solver,
+			'-nls', nls, #Nonlinear solver
 			'-initialStepSize', initStep,
 			'-maxStepSize', maxStep,
 			'-maxIntegrationOrder', integOrder,
@@ -344,10 +345,6 @@ class Simulator(object):
 			'-r', self.res_fn,
 			]
 
-		if nls is not None:
-			sim_args += ['-nls', nls] #Nonlinear solver
-
-		# TODO do the following steps risk removing other arguments?
 		if initStep==None:
 			sim_args = [e for e in sim_args if e not in ('-initialStepSize', initStep)]
 		if maxStep==None:

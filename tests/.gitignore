@@ -21,7 +21,3 @@ TestExternalPyStr
 TestExternalPyFunc
 optimizeInput.csv
 *.libs
-Particle
-*_prof.*data
-ParticleReceiver1D_standalone
-PhysicalParticleSystem
