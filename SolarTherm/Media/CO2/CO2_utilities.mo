@@ -141,7 +141,15 @@ package CO2_utilities
       Library = {"ModelicaStandardTables", "ModelicaMatIO", "zlib"});
   end T_out_turb;
 
+  function cv_p_h "Specific heat capacity of CO2 as a function of pressure and enthalpy. Performs interpolation with the tableID declared in the Medium declaration."
+    extends Modelica.Icons.Function;
+    input Modelica.Media.Interfaces.Types.AbsolutePressure p "Pressure";
+    input Modelica.SIunits.SpecificEnthalpy h "Enthalpy";
+    input Modelica.Blocks.Types.ExternalCombiTable2D tableID;
+    output Modelica.SIunits.SpecificHeatCapacity cv "Specific heat capacity";
   
-  
+    external "C" cv = ModelicaStandardTables_CombiTable2D_getValue(tableID, h, p) annotation(
+      Library = {"ModelicaStandardTables", "ModelicaMatIO", "zlib"});
+  end cv_p_h;
   annotation();
 end CO2_utilities;

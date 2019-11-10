@@ -53,16 +53,7 @@ package CO2_ph "CO2, explicit in p and h, in range 60 - 300 bars, 20 - 800°C"
               */
   import SI=Modelica.SIunits;
   
-  type Temperature = Real (
-      final quantity="ThermodynamicTemperature",
-      final unit="K",
-      min=273.15,
-      max=1200,
-      start=300,
-      nominal=300,
-      displayUnit="degC")
-      "Temperature of the medium; add of min and max constraints"
-      annotation(absoluteValue=true);
+
       
   constant Modelica.Blocks.Types.ExternalCombiTable2D tableIDu_p_h = Modelica.Blocks.Types.ExternalCombiTable2D(
         tableName = "U",fileName= Modelica.Utilities.Files.loadResource("modelica://SolarTherm/Data/CO2/Props_from_P_H.txt"),table=fill(0.0, 0, 2),smoothness=Modelica.Blocks.Types.Smoothness.LinearSegments);
@@ -184,8 +175,7 @@ constant Modelica.Blocks.Types.ExternalCombiTable2D tableIDcv_p_h = Modelica.Blo
   end density;
 
   redeclare function extends specificInternalEnergy "Return specific internal energy"
-  protected
-      outer Modelica.Blocks.Types.ExternalCombiTable2D tableIDu_p_h;
+  
   algorithm
       u := u_p_h(state.p,state.h,tableIDu_p_h);
     annotation (
@@ -247,18 +237,6 @@ constant Modelica.Blocks.Types.ExternalCombiTable2D tableIDcv_p_h = Modelica.Blo
                         </html>"));
   end specificHeatCapacityCv;
   
-  function ToutTurb
-  input SI.ThermodynamicTemperature T_high;
-  input SI.AbsolutePressure p_high;
-  input SI.AbsolutePressure p_low;
-  input SI.Efficiency eta_turb;
-  output SI.ThermodynamicTemperature T_out;
-  protected
-  outer Modelica.Blocks.Types.ExternalCombiTable2D tableIDh_p_T;
-  outer Modelica.Blocks.Types.ExternalCombiTable2D tableIDT_p_h;
-  outer Modelica.Blocks.Types.ExternalCombiTable2D tableIDh_p_s;
-  algorithm
-    T_out:=T_out_turb(T_high,p_high,p_low,eta_turb,tableIDh_p_T,tableIDs_p_h,tableIDT_p_h,tableIDh_p_s);
-    end ToutTurb;
+
     
 end CO2_ph;
