@@ -17,7 +17,7 @@ class TestParticleReceiver1DStandalone(unittest.TestCase):
 		sim = simulation.Simulator(fn)
 		resfn = sim.model + '_res.mat'
 		if RUNSIM=='if-needed':
-			RUNSIM = os.path.getctime(resfn) < os.path.getctime(fn)
+			RUNSIM = (not os.path.exists(resfn)) or os.path.getctime(resfn) < os.path.getctime(fn)
 			print "RUNSIM = %s ('if-needed' test)"%(RUNSIM,)
 		if RUNSIM:
 			if VERBOSE: print "COMPILING MODEL"
