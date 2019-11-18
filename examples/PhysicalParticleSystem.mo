@@ -339,7 +339,7 @@ model PhysicalParticleSystem
 												Placement(transformation(extent = {{-102, 4}, {-94, 12}})));
 
 	//Sun
-	Models.Sources.SolarModel.Sun sun(
+	SolarTherm.Models.Sources.SolarModel.Sun sun(
 		lon = data.lon,
 		lat = data.lat,
 		t_zone = data.t_zone,
@@ -348,7 +348,7 @@ model PhysicalParticleSystem
 																										Placement(transformation(extent = {{-82, 60}, {-62, 80}})));
 
 	// Solar field
-	Models.CSP.CRS.HeliostatsField.HeliostatsField heliostatsField(
+	SolarTherm.Models.CSP.CRS.HeliostatsField.HeliostatsField heliostatsField(
 		n_h = n_heliostat,
 		lon = data.lon,
 		lat = data.lat,
@@ -368,7 +368,7 @@ model PhysicalParticleSystem
 	) annotation(Placement(transformation(extent = {{-88, 2}, {-56, 36}})));
 
 	// Receiver
-	Models.CSP.CRS.Receivers.ParticleReceiver receiver(
+	SolarTherm.Models.CSP.CRS.Receivers.ParticleReceiver receiver(
 		redeclare package Medium = Medium,
 		em = em_curtain,
 		ab = ab_curtain,
@@ -380,7 +380,7 @@ model PhysicalParticleSystem
 								Placement(transformation(extent = {{-46, 4}, {-10, 40}})));
 
 	// Hot tank
-	Models.Storage.Tank.Tank tankHot(
+	SolarTherm.Models.Storage.Tank.Tank tankHot(
 		redeclare package Medium = Medium,
 		D = D_storage,
 		H = H_storage,
@@ -395,7 +395,7 @@ model PhysicalParticleSystem
 												Placement(transformation(extent = {{16, 54}, {36, 74}})));
 
 	// Cold tank
-	Models.Storage.Tank.Tank tankCold(
+	SolarTherm.Models.Storage.Tank.Tank tankCold(
 		redeclare package Medium = Medium,
 		D = D_storage,
 		H = H_storage,
@@ -440,21 +440,21 @@ model PhysicalParticleSystem
 								Placement(visible = true, transformation(origin = {78, 6}, extent = {{-16, -16}, {16, 16}}, rotation = 0)));
 
 	// Temperature sensor
-	Models.Fluid.Sensors.Temperature temperature(
+	SolarTherm.Models.Fluid.Sensors.Temperature temperature(
 		redeclare package Medium = Medium) annotation(
 																					Placement(transformation(extent = {{-14, 74}, {-4, 64}})));
 
 	// Particle heat exchanger: TODO to be implemented
 	//SolarTherm.Models.Fluid.HeatExchangers.SimpleHeatExchanger hx(
-		//redeclare package Medium1=Medium,
-		//redeclare package Medium2=Medium,
+		//redeclare package Medium_A=Medium,
+		//redeclare package Medium_B=Medium,
 		//A=A_hx,
 		//U=U_hx,
 		//dT_approach=dT_approach_hx) annotation(
 																					//Placement(transformation(extent = {{-20, 8}, {-54, 99}})));
 
 	// PowerBlockControl
-	Models.Control.PowerBlockControl controlHot(
+	SolarTherm.Models.Control.PowerBlockControl controlHot(
 		m_flow_on = m_flow_blk,
 		L_on = hot_tnk_empty_ub,
 		L_off = hot_tnk_empty_lb,
@@ -463,7 +463,7 @@ model PhysicalParticleSystem
 																								Placement(transformation(extent = {{48, 72}, {60, 58}})));
 
 	// ReceiverControl
-	Models.Control.ReceiverControl controlCold(
+	SolarTherm.Models.Control.ReceiverControl controlCold(
 		T_ref = T_hot_set,
 		m_flow_min = m_flow_rec_min,
 		m_flow_max = m_flow_rec_max,
@@ -477,7 +477,7 @@ model PhysicalParticleSystem
 									Placement(transformation(extent = {{24, -10}, {10, 4}})));
 
 	// Power block
-	Models.PowerBlocks.PowerBlockModel powerBlock(
+	SolarTherm.Models.PowerBlocks.PowerBlockModel powerBlock(
 		redeclare package Medium = Medium,
 		W_des = P_gross,
 		enable_losses = blk_enable_losses,
