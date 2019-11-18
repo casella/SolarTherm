@@ -52,7 +52,7 @@ class TestPhysicalParticleSystem(unittest.TestCase):
 			for n in ['H_tower','SM','t_storage','A_field']:
 				v,u = getval(n,u=True)
 				print '%s = %f %s'%(n,v,u)
-			print 'ΔT_storage = %f °C' % (getval('T_hot_set')-getval('T_cold_set'))
+			print 'ΔT_storage = %f °C' % (getval('T_hot_des')-getval('T_cold_des'))
 
 			print "\nFinancial parameters"
 			for n in ['pri_field','pri_site','pri_hx','pri_block'
@@ -82,7 +82,7 @@ class TestPhysicalParticleSystem(unittest.TestCase):
 		self.assertAlmostEqual(getval('P_name'),100e6,delta=0.1e6);
 		self.assertAlmostEqual(getval('Q_blk_des'),199.076e6,delta=1e6);
 		self.assertAlmostEqual(getval('Q_rec_des'),497.69e6,delta=1e6);
-		self.assertAlmostEqual(getval('T_hot_set')-getval('T_cold_set'),219.7,delta=0.01) # K
+		self.assertAlmostEqual(getval('T_hot_des')-getval('T_cold_des'),219.7,delta=0.01) # K
 		self.assertEqual(getval('t_storage'),14) # h
 		self.assertEqual(getval('pri_field'), 75) # USD/m²
 		self.assertEqual(getval('pri_site'),10) # USD/m²
@@ -100,6 +100,7 @@ class TestPhysicalParticleSystem(unittest.TestCase):
 		#print(self.perf);
 
 if __name__ == '__main__':
-	RUNSIM='if-needed'
+	#RUNSIM='if-needed'
+	RUNSIM=1
 	VERBOSE=1
 	unittest.main()
