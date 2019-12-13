@@ -41,7 +41,8 @@ model PhysicalParticleSystem
 	parameter Integer year = 1996 "Meteorological year";
 
 	// Field
-	parameter String opt_file = Modelica.Utilities.Files.loadResource("modelica://SolarTherm/Data/Optics/g3p3_opt_eff_1.motab");
+	//parameter String opt_file = Modelica.Utilities.Files.loadResource("modelica://SolarTherm/Data/Optics/g3p3_opt_eff_1.motab"); //Variable optical efficiency
+	parameter String opt_file = Modelica.Utilities.Files.loadResource("modelica://SolarTherm/Data/Optics/g3p3_opt_eff_const.motab"); //Constant optical efficiency
 	parameter Solar_angles angles = Solar_angles.ele_azi "Angles used in the lookup table file";
 
 	parameter Real SM(fixed=false) "Solar multiple";
