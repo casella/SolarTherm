@@ -17,7 +17,7 @@ from repository.SolsticePy.gen_vtk import *
 from repository.SolsticePy.input import Parameters
 from repository.SolsticePy.master_crs import *
 
-def set_param(inputs=[]):
+def set_param(inputs={}):
 
     '''
     set parameters
@@ -25,21 +25,26 @@ def set_param(inputs=[]):
 
     pm=Parameters()
 
-    for i in xrange(len(inputs)):
-
-        k=inputs[i][0]
-        v=inputs[i][1]
+    for k, v in inputs.iteritems():
 
         if hasattr(pm, k):
             setattr(pm, k, v)
+
         else:
             raise RuntimeError("invalid paramter '%s'"%(k,)) 
 
     return pm
 
-def run_simul(put=None):
+def run_simul(inputs={}):
     RAYS=N.r_[1e4]
-    pm=set_param()
+
+    pm=set_param(inputs)
+    print ''
+    print 'Test inputs'
+    for k, v in inputs.iteritems():
+        print k, '=', getattr(pm, k)
+    print ''
+    print ''
 
     TIME=N.array([])
 
@@ -54,7 +59,7 @@ def run_simul(put=None):
 
         crs=CRS(casedir)
 
-        crs.heliostatfield(field=pm.field, num_hst=int(pm.num_hst), hst_w=float(pm.hst_w), hst_h=float(pm.hst_h), hst_z=float(pm.hst_z), hst_rho=float(pm.hst_rho), slope=float(pm.slope), R1=pm.R1, dsep=pm.dsep, tower_h=float(pm.tower_h), tower_r=float(pm.tower_r))
+        crs.heliostatfield(field=pm.field, num_hst=int(pm.n_heliostat), hst_w=float(pm.W_heliostat), hst_h=float(pm.H_heliostat), hst_z=float(pm.hst_z), hst_rho=float(pm.hst_rho), slope=float(pm.slope), R1=pm.R1, dsep=pm.dsep, tower_h=float(pm.H_tower), tower_r=float(pm.tower_r))
 
         crs.receiversystem(receiver=pm.receiver, rec_w=float(pm.rec_w), rec_h=float(pm.rec_h), rec_x=float(pm.rec_x), rec_y=float(pm.rec_y), rec_z=float(pm.rec_z), rec_tilt=float(pm.rec_tilt), rec_grid=int(pm.rec_grid), rec_abs=float(pm.rec_abs))
 
@@ -67,7 +72,7 @@ def run_simul(put=None):
         end=time.time()
         print ''
         print ''
-        print 'Simulation', r
+        print 'Simulation', int(r) , 'rays'
         print 'total time', end-start, 's' 
         N.savetxt(casedir+'/time.csv', N.r_[r, end-start], fmt='%.4f', delimiter=',')
 

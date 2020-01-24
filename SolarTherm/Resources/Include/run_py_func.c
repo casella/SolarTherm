@@ -4,20 +4,14 @@
 #include <python2.7/Python.h>
 #include <stdio.h>
 
-int TestExternalPy_func(int argc, const char *argv[]);
+int TestExternalPy_func(int argc, const char *argv[], const char *varnames[], const double var[] );
 
-int TestExternalPy_func(int argc, const char *argv[])
+int TestExternalPy_func(int argc, const char *argv[], const char *varnames[], const double var[])
 {
     int output;
     PyObject *pName, *pModule, *pFunc;
-    PyObject *pArgs, *pValue;
+    PyObject *pArgs, *pValue, *inputs;
     int i;
-
-    if (argc < 3) {
-        fprintf(stderr,"Usage: call pythonfile funcname [args]\n");
-        return 1;
-    }
-
 
     Py_Initialize(); /*  Initialize Interpreter  */
 
@@ -36,10 +30,16 @@ int TestExternalPy_func(int argc, const char *argv[])
         pFunc = PyObject_GetAttrString(pModule, argv[2]);
         /* pFunc is a new reference */
 
+        pArgs =PyTuple_New(1);
+
         if (pFunc && PyCallable_Check(pFunc)) {
-            pArgs = PyTuple_New(argc - 3);
-            for (i = 0; i < argc - 3; ++i) {
-                pValue = PyFloat_FromDouble(atof(argv[i + 3])); //atof() converts string to float
+            inputs = PyDict_New();
+            for (i = 0; i < argc; ++i) {
+                fprintf(stderr,"*************\n");                
+                printf("variable: %1f\n", var[i]);
+
+                pValue = PyFloat_FromDouble(var[i]);
+
                 if (!pValue) {
                     Py_DECREF(pArgs);
                     Py_DECREF(pModule);
@@ -47,10 +47,15 @@ int TestExternalPy_func(int argc, const char *argv[])
                     return 1;
                 }
                 /* pValue reference stolen here: */
-                PyTuple_SetItem(pArgs, i, pValue);
+                PyDict_SetItemString(inputs, varnames[i], pValue);
             }
+
+            PyTuple_SetItem(pArgs, 0, inputs);
+
             pValue = PyObject_CallObject(pFunc, pArgs);
+
             output = PyFloat_AsDouble(pValue);
+
             fprintf(stderr,"*************\n");
             fprintf(stderr,"Solstice\n");
             printf("The result is: %d\n", output);
