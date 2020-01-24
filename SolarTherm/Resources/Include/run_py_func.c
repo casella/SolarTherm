@@ -4,10 +4,14 @@
 #include <python2.7/Python.h>
 #include <stdio.h>
 
-int TestExternalPy_func(int argc, const char *argv[], const char *varnames[], const double var[] );
+int TestExternalPy_func(const char *ppath, const char *pname, const char *pfunc, int argc, const char *varnames[], const double var[] );
 
-int TestExternalPy_func(int argc, const char *argv[], const char *varnames[], const double var[])
+int TestExternalPy_func(const char *ppath, const char *pname, const char *pfunc, int argc, const char *varnames[], const double var[])
 {
+    // ppath: path of the Python script
+    // pname: name of the Python script
+    // pfunc: name of the Python function
+
     int output;
     PyObject *pName, *pModule, *pFunc;
     PyObject *pArgs, *pValue, *inputs;
@@ -17,17 +21,17 @@ int TestExternalPy_func(int argc, const char *argv[], const char *varnames[], co
 
     // add the path of the Python function file to the system path
     PyObject *sys_path = PySys_GetObject("path");
-    PyList_Append(sys_path, PyString_FromString((char *)argv[0]));
+    PyList_Append(sys_path, PyString_FromString((char *)ppath));  
 
     // name of the Python file
-    pName = PyString_FromString(argv[1]);
+    pName = PyString_FromString(pname);
     /* Error checking of pName left out */
 
     pModule = PyImport_Import(pName);
     Py_DECREF(pName);
 
     if (pModule != NULL) {
-        pFunc = PyObject_GetAttrString(pModule, argv[2]);
+        pFunc = PyObject_GetAttrString(pModule, pfunc);
         /* pFunc is a new reference */
 
         pArgs =PyTuple_New(1);
@@ -35,8 +39,8 @@ int TestExternalPy_func(int argc, const char *argv[], const char *varnames[], co
         if (pFunc && PyCallable_Check(pFunc)) {
             inputs = PyDict_New();
             for (i = 0; i < argc; ++i) {
-                fprintf(stderr,"*************\n");                
-                printf("variable: %1f\n", var[i]);
+                //fprintf(stderr,"*************\n");                
+                //printf("variable: %1f\n", var[i]);
 
                 pValue = PyFloat_FromDouble(var[i]);
 
@@ -76,14 +80,14 @@ int TestExternalPy_func(int argc, const char *argv[], const char *varnames[], co
         else {
             if (PyErr_Occurred())
                 PyErr_Print();
-            fprintf(stderr, "Cannot find function \"%s\"\n", argv[2]);
+            fprintf(stderr, "Cannot find function \"%s\"\n", pfunc);
         }
         Py_XDECREF(pFunc);
         Py_DECREF(pModule);
     }
     else {
         PyErr_Print();
-        fprintf(stderr, "Failed to load \"%s\"\n", argv[1]);
+        fprintf(stderr, "Failed to load \"%s\"\n", pname);
         return 1;
     }
     Py_Finalize();
