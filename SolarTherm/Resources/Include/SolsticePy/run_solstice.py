@@ -33,12 +33,15 @@ def set_param(inputs={}):
         else:
             raise RuntimeError("invalid paramter '%s'"%(k,)) 
 
+    pm.dependent_par()
+
     return pm
 
 def run_simul(inputs={}):
-    RAYS=N.r_[1e4]
+    RAYS=N.r_[1e5]
 
     pm=set_param(inputs)
+
     print ''
     print 'Test inputs'
     for k, v in inputs.iteritems():
@@ -67,8 +70,7 @@ def run_simul(inputs={}):
 
         annualfolder=casedir+'/annual'
         crs.run_annual(annualfolder, num_rays=pm.num_rays, mode='design', genvtk_hst=True)
-
-                                                                             
+                                                                        
         end=time.time()
         print ''
         print ''

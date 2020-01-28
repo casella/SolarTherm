@@ -15,7 +15,7 @@ class TestSolsticePyFunc(unittest.TestCase):
 		sim = simulation.Simulator(fn)
 		sim.compile_model()
 		sim.compile_sim(args=['-s'])
-		sim.simulate(start=0, stop=1, step=0.1)
+		sim.simulate(start=0, stop=10, step=0.1)
 		self.res = postproc.SimResult(sim.model + '_res.mat')
 
 
@@ -23,6 +23,7 @@ class TestSolsticePyFunc(unittest.TestCase):
 		self.assertEqual(self.res.interpolate('result', 0), 999)
 		self.assertEqual(self.res.interpolate('result', 1), 999)
 
+		self.assertAlmostEqual(self.res.interpolate('oeff.eff[1]', 3.1), 30)
 
 if __name__ == '__main__':
 	unittest.main()
