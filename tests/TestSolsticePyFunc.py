@@ -7,8 +7,6 @@ from solartherm import simulation
 from solartherm import postproc
 import os
 
-
-
 class TestSolsticePyFunc(unittest.TestCase):
 	def setUp(self):
 		fn = 'TestSolsticePyFunc.mo'
@@ -20,10 +18,10 @@ class TestSolsticePyFunc(unittest.TestCase):
 
 
 	def test_touching(self):
-		self.assertEqual(self.res.interpolate('result', 0), 999)
-		self.assertEqual(self.res.interpolate('result', 1), 999)
+		self.assertEqual(self.res.interpolate('solstice_res', 0), 999)
+		self.assertEqual(self.res.interpolate('solstice_res', 1), 999)
 
-		self.assertAlmostEqual(self.res.interpolate('oeff.eff[1]', 3.1), 30)
+		self.assertAlmostEqual(self.res.interpolate('opt_eff', 3.1), 30)
 
 if __name__ == '__main__':
 	unittest.main()

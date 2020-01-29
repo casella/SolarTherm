@@ -57,7 +57,7 @@ def run_simul(inputs={}):
         start=time.time()
         pm.num_rays=int(r)
 
-        casedir='./results/num_rays_%s'%int(r)
+        casedir=pm.savedir
         pm.saveparam(casedir)
 
         crs=CRS(casedir)
@@ -85,6 +85,7 @@ def run_simul(inputs={}):
 if __name__=='__main__':
     #solarhour, dec, eff=read_result() 
     #set_param()
-    run_simul()
+    inputs={'savedir': "/home/yewang/.local/lib/omlibrary/SolarTherm/Resources/Include/SolsticePy/result/demo"}
+    run_simul(inputs)
 
 

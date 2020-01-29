@@ -4,9 +4,9 @@
 #include <python2.7/Python.h>
 #include <stdio.h>
 
-int TestExternalPy_func(const char *ppath, const char *pname, const char *pfunc, int argc, const char *varnames[], const double var[] );
+int TestExternalPy_func(const char *ppath, const char *pname, const char *pfunc, const char *psave, int argc, const char *varnames[], const double var[] );
 
-int TestExternalPy_func(const char *ppath, const char *pname, const char *pfunc, int argc, const char *varnames[], const double var[])
+int TestExternalPy_func(const char *ppath, const char *pname, const char *pfunc, const char *psave, int argc, const char *varnames[], const double var[])
 {
     // ppath: path of the Python script
     // pname: name of the Python script
@@ -38,6 +38,7 @@ int TestExternalPy_func(const char *ppath, const char *pname, const char *pfunc,
 
         if (pFunc && PyCallable_Check(pFunc)) {
             inputs = PyDict_New();
+            PyDict_SetItemString(inputs, "savedir", PyString_FromString((char *)psave));
             for (i = 0; i < argc; ++i) {
                 //fprintf(stderr,"*************\n");                
                 //printf("variable: %1f\n", var[i]);
