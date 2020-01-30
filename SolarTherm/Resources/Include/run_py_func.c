@@ -38,7 +38,7 @@ int TestExternalPy_func(const char *ppath, const char *pname, const char *pfunc,
 
         if (pFunc && PyCallable_Check(pFunc)) {
             inputs = PyDict_New();
-            PyDict_SetItemString(inputs, "savedir", PyString_FromString((char *)psave));
+            PyDict_SetItemString(inputs, "casedir", PyString_FromString((char *)psave));
             for (i = 0; i < argc; ++i) {
                 //fprintf(stderr,"*************\n");                
                 //printf("variable: %1f\n", var[i]);

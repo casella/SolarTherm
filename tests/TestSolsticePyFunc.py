@@ -21,7 +21,6 @@ class TestSolsticePyFunc(unittest.TestCase):
 		self.assertEqual(self.res.interpolate('solstice_res', 0), 999)
 		self.assertEqual(self.res.interpolate('solstice_res', 1), 999)
 
-		self.assertAlmostEqual(self.res.interpolate('opt_eff', 3.1), 30)
 
 if __name__ == '__main__':
 	unittest.main()
