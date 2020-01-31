@@ -78,7 +78,8 @@ def run_simul(inputs={}):
         print 'total time', end-start, 's' 
         N.savetxt(casedir+'/time.csv', N.r_[r, end-start], fmt='%.4f', delimiter=',')
 
-    return 999
+    tablefile=casedir+'/OELT_Solstice.motab'
+    return tablefile
 
     
     

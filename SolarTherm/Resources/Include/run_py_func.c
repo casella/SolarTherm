@@ -4,15 +4,16 @@
 #include <python2.7/Python.h>
 #include <stdio.h>
 
-int TestExternalPy_func(const char *ppath, const char *pname, const char *pfunc, const char *psave, int argc, const char *varnames[], const double var[] );
+const char* RunSolsticeFunc(const char *ppath, const char *pname, const char *pfunc, const char *psave, int argc, const char *varnames[], const double var[]);
 
-int TestExternalPy_func(const char *ppath, const char *pname, const char *pfunc, const char *psave, int argc, const char *varnames[], const double var[])
+const char* RunSolsticeFunc(const char *ppath, const char *pname, const char *pfunc, const char *psave, int argc, const char *varnames[], const double var[])
 {
     // ppath: path of the Python script
     // pname: name of the Python script
     // pfunc: name of the Python function
+    // psave: directory of saving the results from mcrt
 
-    int output;
+    const char *tablefile; //the file of the lookup table
     PyObject *pName, *pModule, *pFunc;
     PyObject *pArgs, *pValue, *inputs;
     int i;
@@ -40,8 +41,6 @@ int TestExternalPy_func(const char *ppath, const char *pname, const char *pfunc,
             inputs = PyDict_New();
             PyDict_SetItemString(inputs, "casedir", PyString_FromString((char *)psave));
             for (i = 0; i < argc; ++i) {
-                //fprintf(stderr,"*************\n");                
-                //printf("variable: %1f\n", var[i]);
 
                 pValue = PyFloat_FromDouble(var[i]);
 
@@ -49,7 +48,6 @@ int TestExternalPy_func(const char *ppath, const char *pname, const char *pfunc,
                     Py_DECREF(pArgs);
                     Py_DECREF(pModule);
                     fprintf(stderr, "Cannot convert argument\n");
-                    return 1;
                 }
                 /* pValue reference stolen here: */
                 PyDict_SetItemString(inputs, varnames[i], pValue);
@@ -59,15 +57,11 @@ int TestExternalPy_func(const char *ppath, const char *pname, const char *pfunc,
 
             pValue = PyObject_CallObject(pFunc, pArgs);
 
-            output = PyFloat_AsDouble(pValue);
+            tablefile=PyString_AsString(pValue);
 
-            fprintf(stderr,"*************\n");
-            fprintf(stderr,"Solstice\n");
-            printf("The result is: %d\n", output);
 
             Py_DECREF(pArgs);
             if (pValue != NULL) {
-                //printf("Result of call: %ld\n", PyInt_AsLong(pValue));
                 Py_DECREF(pValue);
             }
             else {
@@ -75,7 +69,6 @@ int TestExternalPy_func(const char *ppath, const char *pname, const char *pfunc,
                 Py_DECREF(pModule);
                 PyErr_Print();
                 fprintf(stderr,"Call failed\n");
-                return 1;
             }
         }
         else {
@@ -89,11 +82,9 @@ int TestExternalPy_func(const char *ppath, const char *pname, const char *pfunc,
     else {
         PyErr_Print();
         fprintf(stderr, "Failed to load \"%s\"\n", pname);
-        return 1;
     }
     Py_Finalize();
-
-    return output;
+    return tablefile;
 }
 
 #endif
