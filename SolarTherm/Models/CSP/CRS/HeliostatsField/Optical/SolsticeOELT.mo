@@ -5,7 +5,7 @@ extends OpticalEfficiency;
 	//import nSI = Modelica.SIunits.Conversions.NonSIunits;
 	//import SI = Modelica.SIunits;
 
-    parameter SolarTherm.Types.Solar_angles angles=SolarTherm.Types.Solar_angles.elo_hra
+    parameter SolarTherm.Types.Solar_angles angles=SolarTherm.Types.Solar_angles.dec_hra
     "Table angles"
         annotation (Dialog(group="Table data interpretation"));
 
@@ -16,12 +16,12 @@ extends OpticalEfficiency;
     parameter String psave = Modelica.Utilities.Files.loadResource("modelica://SolarTherm/Resources/Include/SolsticePy/result/demo") "the directory for saving the results";  
 	parameter Integer argc = 6 "Number of variables to be passed to the C function";
 
-    parameter Integer n_heliostat=20 "Number of heliostats";
+    parameter Integer n_helios=20 "Number of heliostats";
     parameter Real H_tower=200 "Tower height";
-    parameter Real W_heliostat=10 "Height of a heliostat";
-    parameter Real H_heliostat=10 "Width of a heliostat";
-    parameter Real rec_h=24.789 "height of the receiver";
-    parameter Real rec_w=24.789 "width of the receiver";
+    parameter Real W_helio=10 "Height of a heliostat";
+    parameter Real H_helio=10 "Width of a heliostat";
+    parameter Real H_rcv=24.789 "height of the receiver";
+    parameter Real W_rcv=24.789 "width of the receiver";
 
     parameter String tablefile(fixed=false);
 
@@ -40,7 +40,7 @@ extends OpticalEfficiency;
     annotation (Placement(transformation(extent={{-38,22},{-10,42}})));
 
 initial algorithm
-tablefile := SolsticePyFunc(ppath, pname, pfunc, psave, argc, {"n_heliostat","H_tower", "W_heliostat", "H_heliostat", "rec_h", "rec_w"}, {n_heliostat, H_tower, W_heliostat, H_heliostat, rec_h, rec_w});
+tablefile := SolsticePyFunc(ppath, pname, pfunc, psave, argc, {"n_helios","H_tower", "W_helio", "H_helio", "H_rcv", "W_rcv"}, {n_helios, H_tower, W_helio, H_helio, H_rcv, W_rcv});
 
 equation
   if angles==SolarTherm.Types.Solar_angles.elo_hra then

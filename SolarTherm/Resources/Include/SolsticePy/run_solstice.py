@@ -18,13 +18,11 @@ from repository.SolsticePy.input import Parameters
 from repository.SolsticePy.master_crs import *
 
 def set_param(inputs={}):
-
     '''
     set parameters
     '''
 
     pm=Parameters()
-
     for k, v in inputs.iteritems():
 
         if hasattr(pm, k):
@@ -34,7 +32,6 @@ def set_param(inputs={}):
             raise RuntimeError("invalid paramter '%s'"%(k,)) 
 
     pm.dependent_par()
-
     return pm
 
 def run_simul(inputs={}):
@@ -62,14 +59,14 @@ def run_simul(inputs={}):
 
         crs=CRS(casedir)
 
-        crs.heliostatfield(field=pm.field, num_hst=int(pm.n_heliostat), hst_w=float(pm.W_heliostat), hst_h=float(pm.H_heliostat), hst_z=float(pm.hst_z), hst_rho=float(pm.hst_rho), slope=float(pm.slope), R1=pm.R1, dsep=pm.dsep, tower_h=float(pm.H_tower), tower_r=float(pm.tower_r))
+        crs.heliostatfield(field=pm.field_type, num_hst=int(pm.n_helios), hst_w=float(pm.W_helio), hst_h=float(pm.H_helio), hst_z=float(pm.Z_helio), hst_rho=float(pm.rho_helio), slope=float(pm.slope_error), R1=pm.R1, dsep=pm.dsep, tower_h=float(pm.H_tower), tower_r=float(pm.R_tower))
 
-        crs.receiversystem(receiver=pm.receiver, rec_w=float(pm.rec_w), rec_h=float(pm.rec_h), rec_x=float(pm.rec_x), rec_y=float(pm.rec_y), rec_z=float(pm.rec_z), rec_tilt=float(pm.rec_tilt), rec_grid=int(pm.rec_grid), rec_abs=float(pm.rec_abs))
+        crs.receiversystem(receiver=pm.rcv_type, rec_w=float(pm.W_rcv), rec_h=float(pm.H_rcv), rec_x=float(pm.X_rcv), rec_y=float(pm.Y_rcv), rec_z=float(pm.Z_rcv), rec_tilt=float(pm.tilt_rcv), rec_grid=int(pm.n_H_rcv), rec_abs=float(pm.alpha_rcv))
 
-        crs.annualsolar_regular(nd=int(pm.nd), nh=int(pm.nh), latitude=float(pm.latitude), sunshape=pm.sunshape, sunsize=float(pm.sunsize), clearsky=True, plotdni=False)
+        crs.annualsolar_regular(nd=int(pm.n_row_oelt), nh=int(pm.n_col_oelt), latitude=float(pm.lat), sunshape=pm.sunshape, sunsize=float(pm.sunsize), clearsky=True, plotdni=False)
 
         annualfolder=casedir+'/annual'
-        crs.run_annual(annualfolder, num_rays=pm.num_rays, mode='design', genvtk_hst=True)
+        crs.run_annual(annualfolder, num_rays=pm.n_rays, mode='design', genvtk_hst=False)
                                                                         
         end=time.time()
         print ''
