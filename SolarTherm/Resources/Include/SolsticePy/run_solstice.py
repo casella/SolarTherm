@@ -79,6 +79,8 @@ def run_simul(inputs={}):
         N.savetxt(casedir+'/time.csv', N.r_[r, end-start], fmt='%.4f', delimiter=',')
 
     tablefile=casedir+'/OELT_Solstice.motab'
+    output_motab(crs.table, savedir=tablefile)
+    #output_matadata_motab(table=crs.table, field_type=pm.field_type, aiming='single', n_helios=crs.n_helios, A_helio=A_helio, eff_design=crs.eff_des, H_rcv=pm.H_rcv, W_rcv=pm.W_rcv, H_tower=pm.H_tower, lat=pm.lat, slope_error=pm.slope_error, savedir=tablefile)
     return tablefile
 
     
