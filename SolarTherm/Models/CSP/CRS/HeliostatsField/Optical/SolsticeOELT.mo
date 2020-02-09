@@ -30,7 +30,7 @@ extends OpticalEfficiency;
     parameter nSI.Angle_deg tilt_rcv = 0 "tilt of receiver in degree relative to tower axis";
     parameter SI.Length H_rcv=10 "Receiver aperture height";
     parameter SI.Length W_rcv=10 "Receiver aperture width";
-    parameter SI.HeatFlowRate Q_in_rcv = 1e6;
+    parameter SI.HeatFlowRate Q_in_rcv = 10e6;
 
     parameter String tablefile(fixed=false);
 

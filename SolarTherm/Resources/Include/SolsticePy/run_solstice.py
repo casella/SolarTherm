@@ -35,7 +35,7 @@ def set_param(inputs={}):
     return pm
 
 def run_simul(inputs={}):
-    RAYS=N.r_[1e5]
+    RAYS=N.r_[1e6]
 
     pm=set_param(inputs)
 
@@ -57,15 +57,15 @@ def run_simul(inputs={}):
         casedir=pm.casedir
         pm.saveparam(casedir)
 
-        crs=CRS(casedir)
+        crs=CRS(latitude=pm.lat, casedir=casedir)
 
         crs.annualsolar(nd=int(pm.n_row_oelt), nh=int(pm.n_col_oelt), latitude=float(pm.lat), sunshape=pm.sunshape, sunsize=float(pm.sunsize))
 
-        crs.heliostatfield(field=pm.field_type, num_hst=int(pm.n_helios), hst_w=float(pm.W_helio), hst_h=float(pm.H_helio), hst_z=float(pm.Z_helio), hst_rho=float(pm.rho_helio), slope=float(pm.slope_error), R1=pm.R1, dsep=pm.dsep, tower_h=float(pm.H_tower), tower_r=float(pm.R_tower))
+        crs.heliostatfield(field=pm.field_type, hst_rho=pm.rho_helio, slope=pm.slope_error, hst_w=pm.W_helio, hst_h=pm.H_helio, tower_h=pm.H_tower, tower_r=pm.R_tower, hst_z=pm.Z_helio, num_hst=pm.n_helios, R1=pm.R1, fb=pm.fb, dsep=pm.dsep)
 
         crs.receiversystem(receiver=pm.rcv_type, rec_w=float(pm.W_rcv), rec_h=float(pm.H_rcv), rec_x=float(pm.X_rcv), rec_y=float(pm.Y_rcv), rec_z=float(pm.Z_rcv), rec_tilt=float(pm.tilt_rcv), rec_grid=int(pm.n_H_rcv), rec_abs=float(pm.alpha_rcv))
 
-        crs.field_design(Q_in_des=pm.Q_in_rcv, latitude=pm.lat, dni_des=pm.dni_des, num_rays=pm.n_rays, genvtk_hst=False)
+        power, eff_des=crs.field_design(Q_in_des=pm.Q_in_rcv, latitude=pm.lat, dni_des=pm.dni_des, num_rays=pm.n_rays*10, genvtk_hst=True)
       
 
         annualfolder=casedir+'/annual'
@@ -86,7 +86,13 @@ def run_simul(inputs={}):
     
     
 if __name__=='__main__':
-    inputs={'casedir': "./result/demo"}
+    case="./result/demo"
+    Q_in_rcv=500e6 #W
+    W_rcv=25.
+    H_rcv=25.
+    H_tower=200.
+    inputs={'casedir': case, 'Q_in_rcv':Q_in_rcv, 'W_rcv':W_rcv, 'H_rcv':H_rcv, 'H_tower':H_tower}
+
     run_simul(inputs)
 
 
