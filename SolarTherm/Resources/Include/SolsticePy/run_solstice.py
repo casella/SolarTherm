@@ -8,15 +8,15 @@ from uncertainties import ufloat
 from scipy.interpolate import interp1d,interp2d
 import matplotlib.cm as cm
 
-from repository.SolsticePy.proces_raw import *
-from repository.SolsticePy.cal_layout import radial_stagger
-from repository.SolsticePy.cal_field import *
-from repository.SolsticePy.cal_sun import *
-from repository.SolsticePy.gen_YAML import gen_YAML
-from repository.SolsticePy.gen_vtk import *
-from repository.SolsticePy.input import Parameters
-from repository.SolsticePy.master_crs import *
-from repository.SolsticePy.output_solartherm import *
+from proces_raw import *
+from cal_layout import radial_stagger
+from cal_field import *
+from cal_sun import *
+from gen_YAML import gen_YAML
+from gen_vtk import *
+from input import Parameters
+from master_crs import *
+from output_solartherm import *
 
 def set_param(inputs={}):
     '''
@@ -57,7 +57,7 @@ def run_simul(inputs={}):
 
         casedir=pm.casedir
         pm.saveparam(casedir)
-        pm.n_helios=100
+        pm.n_helios=1000
 
         crs=CRS(latitude=pm.lat, casedir=casedir)
 

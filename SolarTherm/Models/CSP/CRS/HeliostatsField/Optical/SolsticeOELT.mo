@@ -14,7 +14,8 @@ extends OpticalEfficiency;
 	parameter String pname = "run_solstice" "Name of the Python script";
 	parameter String pfunc = "run_simul" "Name of the Python functiuon"; 
 
-    parameter String psave = Modelica.Utilities.Files.loadResource("modelica://SolarTherm/Resources/Include/SolsticePy/result/demo") "the directory for saving the results";  
+    //parameter String psave = Modelica.Utilities.Files.loadResource("modelica://SolarTherm/Resources/Include/SolsticePy/result/demo") "the directory for saving the results";  
+    parameter String psave = "/media/ye/Researches/solstice-system/test0" "the directory for saving the results"; 
 	parameter Integer argc =10 "Number of variables to be passed to the C function";
 
     //parameter String field_type = "polar" "Other options are : surround";
