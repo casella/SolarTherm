@@ -9,7 +9,7 @@ model Reference_2_solstice
 	import FI = SolarTherm.Models.Analysis.Finances;
 	import SolarTherm.Types.Solar_angles;
 	import SolarTherm.Types.Currency;
-
+    import metadata = SolarTherm.Utilities.Metadata_Optics;
 	extends Modelica.Icons.Example;
 
 	// Input Parameters
@@ -34,8 +34,12 @@ model Reference_2_solstice
 	parameter nSI.Time_hour t_zone = 9.5 "Local time zone (UCT=0)";
 	parameter Integer year = 1996 "Meteorological year";
 
+
+    parameter String opt_file(fixed = false);
+    parameter Real metadata_list[8] = metadata(opt_file);
+    parameter Real n_heliostat = metadata_list[1] "Number of heliostats";
 	// Field
-	parameter Solar_angles angles = Solar_angles.elo_hra "Angles used in the lookup table file";
+	parameter Solar_angles angles = Solar_angles.dec_hra "Angles used in the lookup table file";
 
 	parameter Real SM = 1.8 "Solar multiple";
 	parameter Real land_mult = 6.16783860571 "Land area multiplier";
@@ -161,7 +165,7 @@ model Reference_2_solstice
 	parameter SI.Energy E_max = t_storage * 3600 * Q_flow_des "Maximum tank stored energy";
 
 	parameter SI.Area A_field = (R_des/eff_opt/he_av_design)/dni_des "Heliostat field reflective area";
-	parameter Integer n_heliostat = integer(ceil(A_field/A_heliostat)) "Number of heliostats";
+	//parameter Integer n_heliostat = integer(ceil(A_field/A_heliostat)) "Number of heliostats";
 
 	parameter SI.Area A_receiver = A_field/C "Receiver aperture area";
 	parameter SI.Diameter D_receiver = sqrt(A_receiver/(CN.pi*ar_rec)) "Receiver diameter";
@@ -293,7 +297,6 @@ model Reference_2_solstice
 
 	// Solar field
 	Models.CSP.CRS.HeliostatsField.HeliostatsFieldSolstice heliostatsField(
-		n_h = n_heliostat,
 		lon = data.lon,
 		lat = data.lat,
 		ele_min(displayUnit = "deg") = ele_min,
@@ -422,6 +425,7 @@ model Reference_2_solstice
 	FI.Money R_spot(start = 0, fixed = true) "Spot market revenue";
 
 initial equation
+    opt_file = heliostatsField.optical.tablefile;
     H_rcv=25;
 
 	if fixed_field then

@@ -16,6 +16,7 @@ from repository.SolsticePy.gen_YAML import gen_YAML
 from repository.SolsticePy.gen_vtk import *
 from repository.SolsticePy.input import Parameters
 from repository.SolsticePy.master_crs import *
+from repository.SolsticePy.output_solartherm import *
 
 def set_param(inputs={}):
     '''
@@ -35,7 +36,7 @@ def set_param(inputs={}):
     return pm
 
 def run_simul(inputs={}):
-    RAYS=N.r_[1e6]
+    RAYS=N.r_[1e3]
 
     pm=set_param(inputs)
 
@@ -56,6 +57,7 @@ def run_simul(inputs={}):
 
         casedir=pm.casedir
         pm.saveparam(casedir)
+        pm.n_helios=100
 
         crs=CRS(latitude=pm.lat, casedir=casedir)
 
@@ -79,8 +81,8 @@ def run_simul(inputs={}):
         N.savetxt(casedir+'/time.csv', N.r_[r, end-start], fmt='%.4f', delimiter=',')
 
     tablefile=casedir+'/OELT_Solstice.motab'
-    output_motab(crs.table, savedir=tablefile)
-    #output_matadata_motab(table=crs.table, field_type=pm.field_type, aiming='single', n_helios=crs.n_helios, A_helio=A_helio, eff_design=crs.eff_des, H_rcv=pm.H_rcv, W_rcv=pm.W_rcv, H_tower=pm.H_tower, lat=pm.lat, slope_error=pm.slope_error, savedir=tablefile)
+    A_helio=pm.H_helio*pm.W_helio
+    output_matadata_motab(table=crs.table, field_type=pm.field_type, aiming='single', n_helios=crs.n_helios, A_helio=A_helio, eff_design=crs.eff_des, H_rcv=pm.H_rcv, W_rcv=pm.W_rcv, H_tower=pm.H_tower, lat=pm.lat, slope_error=pm.slope_error, savedir=tablefile)
     return tablefile
 
     
