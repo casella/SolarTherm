@@ -1,9 +1,10 @@
 within SolarTherm.Models.CSP.CRS.HeliostatsField;
 model HeliostatsFieldSolstice
     extends Interfaces.Models.Heliostats;
+    import metadata = SolarTherm.Utilities.Metadata_Optics;
     parameter nSI.Angle_deg lon=133.889 "Longitude (+ve East)" annotation(Dialog(group="System location"));
     parameter nSI.Angle_deg lat=-23.795 "Latitude (+ve North)" annotation(Dialog(group="System location"));
-    parameter Integer n_h=1 "Number of heliostats" annotation(Dialog(group="Technical data"));
+    parameter Real n_h=metadata_list[1] "Number of heliostats" annotation(Dialog(group="Technical data"));
     parameter SI.Area A_h=4 "Heliostat's Area" annotation(Dialog(group="Technical data"));
     parameter Real he_av=0.99 "Heliostat availability" annotation(Dialog(group="Technical data"));
 
@@ -38,7 +39,8 @@ model HeliostatsFieldSolstice
 
     parameter SI.Energy E_start=90e3 "Start-up energy of a single heliostat" annotation(Dialog(group="Parasitic loads"));
     parameter SI.Power W_track=0.055e3 "Tracking power for a single heliostat" annotation(Dialog(group="Parasitic loads"));
-
+   parameter String opt_file(fixed=false);
+   parameter Real metadata_list[8] = metadata(opt_file);
 
   SolarTherm.Models.CSP.CRS.HeliostatsField.Optical.SolsticeOELT optical(hra=solar.hra, dec=solar.dec, lat=lat, W_helio=W_helio, H_helio=H_helio, rho_helio=rho_helio, slope_error=slope_error, H_tower=H_tower, R_tower=R_tower, tilt_rcv=tilt_rcv, H_rcv=H_rcv, W_rcv=W_rcv, Q_in_rcv=Q_in_rcv);
 
@@ -55,7 +57,8 @@ model HeliostatsFieldSolstice
   Modelica.Blocks.Interfaces.BooleanInput defocus if use_defocus annotation (Placement(
         transformation(extent={{-126,-88},{-86,-48}}),iconTransformation(extent={{-110,
             -72},{-86,-48}})));
-
+  Modelica.Blocks.Interfaces.RealOutput Q_incident annotation(
+    Placement(transformation(extent = {{94, -18}, {130, 18}})));
   Modelica.Blocks.Interfaces.RealInput Wspd if use_wind annotation (Placement(
         transformation(extent={{-126,50},{-86,90}}), iconTransformation(extent={
             {-110,50},{-86,74}})));
@@ -87,6 +90,10 @@ protected
   parameter SI.HeatFlowRate Q_defocus=nu_defocus*Q_design "Heat flow rate limiter at defocus state" annotation(Dialog(group="Operating strategy",enable=use_defocus));
 initial equation
    on_internal=Q_raw>Q_start;
+   opt_file=optical.tablefile;
+
+   
+
 equation
   if use_on then
     connect(on,on_internal);
@@ -138,6 +145,7 @@ equation
   when ele>1e-2 then
     t_on=time;
   end when;
+    Q_incident = Q_net;
   W_loss2= if time<t_on+t_start then n_h*he_av*damping*E_start/t_start else 0;
   W_loss=W_loss1+W_loss2;
   annotation (Documentation(info="<html>

@@ -36,7 +36,7 @@ def set_param(inputs={}):
     return pm
 
 def run_simul(inputs={}):
-    RAYS=N.r_[1e3]
+    RAYS=N.r_[1e6]
 
     pm=set_param(inputs)
 
@@ -57,7 +57,6 @@ def run_simul(inputs={}):
 
         casedir=pm.casedir
         pm.saveparam(casedir)
-        pm.n_helios=1000
 
         crs=CRS(latitude=pm.lat, casedir=casedir)
 
