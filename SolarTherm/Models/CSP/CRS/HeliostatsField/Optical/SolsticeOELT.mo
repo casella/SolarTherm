@@ -15,7 +15,7 @@ extends OpticalEfficiency;
 	parameter String pfunc = "run_simul" "Name of the Python functiuon"; 
 
     //parameter String psave = Modelica.Utilities.Files.loadResource("modelica://SolarTherm/Resources/Include/SolsticePy/result/demo") "the directory for saving the results";  
-    parameter String psave = "/media/ye/Researches/solstice-system/test0" "the directory for saving the results"; 
+    parameter String psave="/media/ye/Researches/solstice-system/test0";
 	parameter Integer argc =10 "Number of variables to be passed to the C function";
 
     //parameter String field_type = "polar" "Other options are : surround";
@@ -31,7 +31,7 @@ extends OpticalEfficiency;
     parameter nSI.Angle_deg tilt_rcv = 0 "tilt of receiver in degree relative to tower axis";
     parameter SI.Length H_rcv=10 "Receiver aperture height";
     parameter SI.Length W_rcv=10 "Receiver aperture width";
-    parameter SI.HeatFlowRate Q_in_rcv = 10e6;
+    parameter SI.HeatFlowRate Q_in_rcv = 1e6;
 
     parameter String tablefile(fixed=false);
 
