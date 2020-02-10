@@ -38,17 +38,12 @@ model PhysicalParticleCO21DSolstice
   // Field, heliostat and tower
   parameter String opt_file(fixed = false);
   parameter String casefolder="/media/yewang/Data/testSolsticeIntegration" "case directory";
-  parameter Real metadata_list[8] = metadata(opt_file);
   parameter Solar_angles angles = Solar_angles.dec_hra "Angles used in the lookup table file";
-  parameter Real land_mult = 0 "Land area multiplier";
   parameter String field_type = "polar" "Other options are : surround";
   parameter SI.Length W_helio = 10 "width of heliostat in m";
   parameter SI.Length H_helio = 10 "height of heliostat in m";
   parameter SI.Efficiency rho_helio = 0.9 "reflectivity of heliostat max =1";
-  parameter SI.Area A_helio = W_helio * H_helio "Heliostat module reflective area";
   parameter SI.Angle slope_error = 2e-3 "slope error of the heliostat in mrad";
-  parameter Real he_av_design = 0.99 "Helisotats availability";
-  parameter SI.Efficiency eff_opt = 0.5565 "Field optical efficiency at design point";
   parameter SI.Length H_tower = 200 "Tower height";
   //parameter SI.Length R_tower = W_rcv / 2 "Tower diameter";
   parameter SI.Length R_tower = 0.01 "Tower diameter";
@@ -56,13 +51,17 @@ model PhysicalParticleCO21DSolstice
   parameter Real fb=0.7 "factor to grow the field layout";
   parameter Boolean single_field = true "True for single field, false for multi tower";
   parameter Boolean concrete_tower = true "True for concrete, false for thrust tower";
+  parameter Real he_av_design = 0.99 "Helisotats availability";
+  parameter SI.Efficiency eff_opt = 0.5565 "Field optical efficiency at design point";
   parameter Real gnd_cvge = 0.3126 "Ground coverage";
   parameter Real excl_fac = 0.97 "Exclusion factor";
+  parameter SI.Area A_helio = W_helio * H_helio "Heliostat module reflective area";
+  parameter Real land_mult = 0 "Land area multiplier";
+  parameter Real metadata_list[8] = metadata(opt_file);
   //Design Condition
   parameter String rcv_type = "particle" "other options are : flat, cylindrical, stl";
   parameter SI.Area A_rcv(fixed = false) "Receiver aperture area CR= 1200";
   parameter nSI.Angle_deg tilt_rcv = 0 "tilt of receiver in degree relative to tower axis";
-  parameter SI.Area A_field = metadata_list[1] * metadata_list[2] "Heliostat field reflective area";
   parameter Real SM = 2.5 "Solar multiple";
   parameter SI.Power P_gross(fixed = if fixed_field then false else true) = 100e06 "Power block gross rating at design point";
   parameter SI.Efficiency eff_blk = 0.502 "Power block efficiency at design point";
@@ -76,6 +75,8 @@ model PhysicalParticleCO21DSolstice
   parameter Integer n_H_rcv = 20 "discretization of the height axis of the receiver";
   parameter Integer n_W_rcv = 1 "discretization of the width axis of the receiver";
   parameter SI.HeatFlowRate Q_in_rcv = P_gross / eff_blk / eta_rcv_assumption * SM;
+  parameter SI.Area A_field = metadata_list[1] * metadata_list[2] "Heliostat field reflective area";
+
   //Optical simulation parameters
   //parameter Integer n_rays = 10000 "number of rays for solstice";
   //parameter Integer n_procs = 1 "number of processors in soltice";
