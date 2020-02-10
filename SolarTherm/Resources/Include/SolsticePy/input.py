@@ -80,7 +80,7 @@ class Parameters:
         self.concret_tower=False
         self.single_field=True 
 
-        self.R1=90.
+        self.R1=80.
         self.dsep=0.
         self.fb=0.7
 
