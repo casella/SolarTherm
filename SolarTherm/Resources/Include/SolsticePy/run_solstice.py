@@ -36,7 +36,7 @@ def set_param(inputs={}):
     return pm
 
 def run_simul(inputs={}):
-    RAYS=N.r_[1e6]
+
 
     pm=set_param(inputs)
 
@@ -49,14 +49,19 @@ def run_simul(inputs={}):
 
     TIME=N.array([])
 
-    for r in RAYS:
+
+    print ''
+
+    start=time.time()
+
+    casedir=pm.casedir
+    pm.saveparam(casedir)
+    tablefile=casedir+'/OELT_Solstice.motab'
+    if os.path.exists(tablefile):    
         print ''
+        print 'Load exsited OELT'
 
-        start=time.time()
-        pm.n_rays=int(r)
-
-        casedir=pm.casedir
-        pm.saveparam(casedir)
+    else:
 
         crs=CRS(latitude=pm.lat, casedir=casedir)
 
@@ -68,27 +73,25 @@ def run_simul(inputs={}):
 
         power, eff_des=crs.field_design(Q_in_des=pm.Q_in_rcv, latitude=pm.lat, dni_des=pm.dni_des, num_rays=pm.n_rays*10, genvtk_hst=True)
       
-
         annualfolder=casedir+'/annual'
         crs.run_annual(annualfolder, num_rays=pm.n_rays, genvtk_hst=False)
                                                                         
+        A_helio=pm.H_helio*pm.W_helio
+        output_matadata_motab(table=crs.table, field_type=pm.field_type, aiming='single', n_helios=crs.n_helios, A_helio=A_helio, eff_design=crs.eff_des, H_rcv=pm.H_rcv, W_rcv=pm.W_rcv, H_tower=pm.H_tower, lat=pm.lat, slope_error=pm.slope_error, savedir=tablefile)
         end=time.time()
         print ''
         print ''
-        print 'Simulation', int(r) , 'rays'
-        print 'total time', end-start, 's' 
-        N.savetxt(casedir+'/time.csv', N.r_[r, end-start], fmt='%.4f', delimiter=',')
+        print 'Simulation', pm.n_rays , 'rays'
+        print 'total time %.2f'%((end-start)/60.), 'min' 
+        N.savetxt(casedir+'/time.csv', N.r_[pm.n_rays, end-start], fmt='%.4f', delimiter=',')
 
-    tablefile=casedir+'/OELT_Solstice.motab'
-    A_helio=pm.H_helio*pm.W_helio
-    output_matadata_motab(table=crs.table, field_type=pm.field_type, aiming='single', n_helios=crs.n_helios, A_helio=A_helio, eff_design=crs.eff_des, H_rcv=pm.H_rcv, W_rcv=pm.W_rcv, H_tower=pm.H_tower, lat=pm.lat, slope_error=pm.slope_error, savedir=tablefile)
     return tablefile
 
     
     
 if __name__=='__main__':
     case="./result/demo"
-    Q_in_rcv=500e6 #W
+    Q_in_rcv=1e6 #W
     W_rcv=25.
     H_rcv=25.
     H_tower=200.
