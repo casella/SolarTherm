@@ -234,8 +234,8 @@ def radial_stagger(latitude, num_hst, width, height, hst_z, towerheight, R1, fb,
         fts=24
         plt.figure(dpi=100.,figsize=(12,9))
         plt.plot(Xexp, Yexp, '.')
-        #plt.xlim(-2000, 2000)
-        #plt.ylim(0, 2500)
+        plt.xlim(-2000, 2000)
+        plt.ylim(0, 2500)
         plt.xticks(fontsize=fts)
         plt.yticks(fontsize=fts)
         plt.savefig(open('./%s-expand-fb%s-desp.png'%(field, fb),'w'), bbox_inches='tight')
@@ -252,6 +252,6 @@ if __name__=='__main__':
     # Nrows1=6, Nrows2=12. Nrows3=25
     # Rmin=13.6m, DM=DH=15.7m
     # Nhel1=35 
-    pos_and_aim=radial_stagger(latitude=34., num_hst=20000, width=12.3, height=9.75, hst_z=1., towerheight=100, R1=87.5, fb=0.7, dsep=0., field='polar', savedir='.', plot=True)
-
+    #pos_and_aim=radial_stagger(latitude=34., num_hst=20000, width=12.3, height=9.75, hst_z=1., towerheight=100, R1=87.5, fb=0.7, dsep=0., field='polar', savedir='.', plot=True)
+    pos_and_aim=radial_stagger(latitude=34., num_hst=22640, width=10., height=10., hst_z=0., towerheight=250, R1=80, fb=0., dsep=0., field='polar', savedir='.', plot=True)
       

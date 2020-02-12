@@ -37,18 +37,18 @@ model PhysicalParticleCO21DSolstice
   parameter Integer year = 1996 "Meteorological year";
   // Field, heliostat and tower
   parameter String opt_file(fixed = false);
-  parameter String casefolder="/media/yewang/Data/testSolsticeIntegration" "case directory";
+  parameter String casefolder = "/media/yewang/Data/ParticleSystemRes/res_HT300_fb0.4/solstice_res" "case directory";
   parameter Solar_angles angles = Solar_angles.dec_hra "Angles used in the lookup table file";
   parameter String field_type = "polar" "Other options are : surround";
   parameter SI.Length W_helio = 10 "width of heliostat in m";
   parameter SI.Length H_helio = 10 "height of heliostat in m";
   parameter SI.Efficiency rho_helio = 0.9 "reflectivity of heliostat max =1";
   parameter SI.Angle slope_error = 2e-3 "slope error of the heliostat in mrad";
-  parameter SI.Length H_tower = 200 "Tower height";
+  parameter SI.Length H_tower = 300 "Tower height";
   //parameter SI.Length R_tower = W_rcv / 2 "Tower diameter";
   parameter SI.Length R_tower = 0.01 "Tower diameter";
-  parameter SI.Length R1=80 "distance between the first row heliostat and the tower";
-  parameter Real fb=0.7 "factor to grow the field layout";
+  parameter SI.Length R1 = 80 "distance between the first row heliostat and the tower";
+  parameter Real fb = 0.4 "factor to grow the field layout";
   parameter Boolean single_field = true "True for single field, false for multi tower";
   parameter Boolean concrete_tower = true "True for concrete, false for thrust tower";
   parameter Real he_av_design = 0.99 "Helisotats availability";
@@ -76,13 +76,12 @@ model PhysicalParticleCO21DSolstice
   parameter Integer n_W_rcv = 1 "discretization of the width axis of the receiver";
   parameter SI.HeatFlowRate Q_in_rcv = P_gross / eff_blk / eta_rcv_assumption * SM;
   parameter SI.Area A_field = metadata_list[1] * metadata_list[2] "Heliostat field reflective area";
-
   //Optical simulation parameters
   //parameter Integer n_rays = 10000 "number of rays for solstice";
   //parameter Integer n_procs = 1 "number of processors in soltice";
   //Output of the optical simulation
-  parameter Real n_row_oelt = 12 "number of rows of the look up table (simulated days in a year)";
-  parameter Real n_col_oelt = 8 "number of columns of the lookup table (simulated hours per day)";
+  parameter Real n_row_oelt = 9 "number of rows of the look up table (simulated days in a year)";
+  parameter Real n_col_oelt = 25 "number of columns of the lookup table (simulated hours per day)";
   // Receiver
   parameter Real ar_rec = 1 "Height to diameter aspect ratio of receiver aperture";
   parameter SI.Efficiency em_curtain = 0.86 "Emissivity of curtain";
@@ -188,7 +187,7 @@ model PhysicalParticleCO21DSolstice
   parameter SI.Length H_rcv = sqrt(A_rcv * ar_rec) "Receiver aperture height";
   parameter SI.Length W_rcv = A_rcv / H_rcv "Receiver aperture width";
   parameter SI.Length L_rcv = 1 "Receiver length(depth)";
-  parameter SI.Area A_land = 0 "Land area";
+  parameter SI.Area A_land = metadata_list[8] "Land area";
   parameter SI.SpecificEnthalpy h_cold_set = Medium.specificEnthalpy(state_cold_set) "Cold particles specific enthalpy at design";
   parameter SI.SpecificEnthalpy h_hot_set = Medium.specificEnthalpy(state_hot_set) "Hot particles specific enthalpy at design";
   parameter SI.SpecificEnthalpy h_co2_in_set = MedPB.specificEnthalpy(state_co2_in_set) "Cold CO2 specific enthalpy at design";
@@ -284,7 +283,7 @@ model PhysicalParticleCO21DSolstice
   SolarTherm.Models.Sources.SolarModel.Sun sun(lon = data.lon, lat = data.lat, t_zone = data.t_zone, year = data.year, redeclare function solarPosition = Models.Sources.SolarFunctions.PSA_Algorithm) annotation(
     Placement(transformation(extent = {{-82, 60}, {-62, 80}})));
   // Solar field
-  SolarTherm.Models.CSP.CRS.HeliostatsField.HeliostatsFieldSolstice heliostatsField(lon = data.lon, lat = data.lat, ele_min(displayUnit = "deg") = ele_min, use_wind = use_wind, Wspd_max = Wspd_max, he_av = he_av_design, use_on = true, use_defocus = true, A_h = A_helio, nu_defocus = nu_defocus, nu_min = nu_min_sf, Q_design = Q_flow_defocus, nu_start = nu_start, Q_in_rcv=Q_in_rcv, H_rcv=H_rcv, W_rcv=W_rcv, tilt_rcv=tilt_rcv, W_helio=W_helio, H_helio=H_helio, H_tower=H_tower, R_tower=R_tower, R1=R1, fb=fb, rho_helio=rho_helio,slope_error=slope_error, n_row_oelt=n_row_oelt, n_col_oelt=n_col_oelt, psave=casefolder) annotation(
+  SolarTherm.Models.CSP.CRS.HeliostatsField.HeliostatsFieldSolstice heliostatsField(lon = data.lon, lat = data.lat, ele_min(displayUnit = "deg") = ele_min, use_wind = use_wind, Wspd_max = Wspd_max, he_av = he_av_design, use_on = true, use_defocus = true, A_h = A_helio, nu_defocus = nu_defocus, nu_min = nu_min_sf, Q_design = Q_flow_defocus, nu_start = nu_start, Q_in_rcv = Q_in_rcv, H_rcv = H_rcv, W_rcv = W_rcv, tilt_rcv = tilt_rcv, W_helio = W_helio, H_helio = H_helio, H_tower = H_tower, R_tower = R_tower, R1 = R1, fb = fb, rho_helio = rho_helio, slope_error = slope_error, n_row_oelt = n_row_oelt, n_col_oelt = n_col_oelt, psave = casefolder) annotation(
     Placement(transformation(extent = {{-88, 2}, {-56, 36}})));
   // Receiver
   // Hot tank
