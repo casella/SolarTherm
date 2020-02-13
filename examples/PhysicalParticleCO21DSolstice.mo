@@ -490,7 +490,6 @@ equation
 	<li> A. Shirazi and A. Fontalvo Lascano (June 2019) :<br>Released first version. </li>
 	<li> Philipe Gunawan Gan (Jan 2020) :<br>Released PhysicalParticleCO21D (with 1D particle receiver). </li>
 	</ul>
-
 	</html>"),
     __OpenModelica_simulationFlags(lv = "LOG_STATS", outputFormat = "mat", s = "dassl"));
 end PhysicalParticleCO21DSolstice;
