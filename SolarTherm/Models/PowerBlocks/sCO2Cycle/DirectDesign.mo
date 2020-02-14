@@ -916,7 +916,17 @@ deltaHi=psi*tipSpeed^2/(( N_compressor/N_design) ^ ((20 * phi) ^ 3));
       Line);
     
     //m_sup = true;
-    m_sup = exchanger.HTF_port_a.m_flow >= exchanger.m_HTF_des * nu_min;
+    /*m_sup = exchanger.HTF_port_a.m_flow >= exchanger.m_HTF_des * nu_min;*/
+
+    if exchanger.HTF_port_a.m_flow >= (exchanger.m_HTF_des * nu_min)  then
+        
+        m_sup = true;
+  elseif exchanger.HTF_port_a.m_flow < exchanger.m_HTF_des * nu_min - 0.01 * exchanger.m_HTF_des then
+        m_sup = false;
+  else
+         m_sup = false;
+  end if;
+
   
   if m_sup then 
     turbine.p_out=mainCompressor.p_out/PR;
