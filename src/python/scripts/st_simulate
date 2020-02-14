@@ -19,8 +19,12 @@ def simulation_worker(fn, start, stop, step, initStep, maxStep, integOrder, solv
 	sim.update_pars(par_n, par_v)
 	sim.simulate(start=start, stop=stop, step=step, initStep=initStep, maxStep=maxStep,
 		integOrder=integOrder, solver=solver, nls=nls, lv=lv, args=args)
-	res = resultclass(sim.res_fn)
-	perf = res.calc_perf()
+
+	if resultclass!=None:
+		res = resultclass(sim.res_fn)
+		perf = res.calc_perf()
+	else:
+		perf=None
 	return perf
 
 class LoggerPerf(object):
@@ -32,7 +36,7 @@ class LoggerPerf(object):
 	def header(self):
 		print('Starting simulation')
 		print(','.join(['index']+self.perf_names))
-
+		
 	def entry(self, suff, perf):
 		print(','.join([suff]+list(str(perf[j])
 			for j, n in enumerate(self.perf_names))))
@@ -60,6 +64,8 @@ if __name__ == '__main__':
 			help='no compilation at all (--nomc and --nosc)')
 	parser.add_argument('--nosim', action='store_true',
 			help='no simulation')
+	parser.add_argument('--ppres', action='store_true',
+			help='post processing the .mat res file')
 	parser.add_argument('--start', type=str, default='0',
 			help='simulation start time: <number>[,y,d,m,s]')
 	parser.add_argument('--stop', type=str, default='1y',
@@ -131,57 +137,112 @@ if __name__ == '__main__':
 			print('Compiling simulator')
 			sim.compile_sim(args=([] if args.v else ['-s']))
 
-	if args.fuel:
-		resultclass = postproc.SimResultFuel
-	else:
-		resultclass = postproc.SimResultElec
-
-	sim.load_init()
-
-	dims = [] # dimensions
-	par_n = [] # names
-	par_v = [] # values
-	for pp in args.par:
-		k, v = pp.split('=')
-		par_n.append(k)
-		vals = [str(simulation.parse_var_val(vv, sim.get_unit(k)))
-			for vv in v.split(',')]
-		par_v.append(vals)
-
-		if len(vals) >= 2:
-			dims.append(len(par_n) - 1)
-
-	f_ilog = open(sim.model+'_init.log', 'w')
-	f_ilog.write(','.join(['index']+par_n) + '\n')
-	var_vals = []
-	for i, val in enumerate(itertools.product(*par_v)):
-		var_vals.append(val)
-		f_ilog.write(','.join([str(i)]+list(val)) + '\n')
-		
-	logger = LoggerPerf(resultclass)
-	perfs = [None]*len(var_vals)
-	if not args.nosim:
-		t = time()
-		logger.header()
-		worker_enc = partial(simulation_worker, args.file, args.start,
-				args.stop, args.step, args.initStep, args.maxStep, args.integOrder,
-				args.solver, args.nls, args.lv, sargs, par_n, resultclass, fuse_dirs)
-		if args.np:
-			pool = mp.Pool(processes=args.np)
-			# use apply_async in loop (not map_async) so callback runs 1x per sim.
-			for i, val in enumerate(var_vals):
-				pool.apply_async(worker_enc, args=(i, val)
-					,callback=partial(simulation_callback, perfs, i, logger)
-				)
-			pool.close()
-			pool.join()
+	if args.ppres:
+		if args.fuel:
+			resultclass = postproc.SimResultFuel
 		else:
-		# serial version...
-			for i, val in enumerate(var_vals):
-				perf = worker_enc(i, val)
-				simulation_callback(perfs,i,logger,perf)
+			resultclass = postproc.SimResultElec
 
-		print "Simulation time: %fs"%(time()-t)
+		sim.load_init()
+
+		dims = [] # dimensions
+		par_n = [] # names
+		par_v = [] # values
+		for pp in args.par:
+			k, v = pp.split('=')
+			par_n.append(k)
+			vals = [str(simulation.parse_var_val(vv, sim.get_unit(k)))
+				for vv in v.split(',')]
+			par_v.append(vals)
+
+			if len(vals) >= 2:
+				dims.append(len(par_n) - 1)
+
+		f_ilog = open(sim.model+'_init.log', 'w')
+		f_ilog.write(','.join(['index']+par_n) + '\n')
+		var_vals = []
+		for i, val in enumerate(itertools.product(*par_v)):
+			var_vals.append(val)
+			f_ilog.write(','.join([str(i)]+list(val)) + '\n')
+		f_ilog.close()
+		logger = LoggerPerf(resultclass)
+		perfs = [None]*len(var_vals)
+
+		if not args.nosim:
+			t = time()
+			logger.header()
+			worker_enc = partial(simulation_worker, args.file, args.start,
+					args.stop, args.step, args.initStep, args.maxStep, args.integOrder,
+					args.solver, args.nls, args.lv, sargs, par_n, resultclass, fuse_dirs)
+
+			if args.np:
+				pool = mp.Pool(processes=args.np)
+				# use apply_async in loop (not map_async) so callback runs 1x per sim.
+				for i, val in enumerate(var_vals):
+					pool.apply_async(worker_enc, args=(i, val)
+						,callback=partial(simulation_callback, perfs, i, logger)
+					)
+				pool.close()
+				pool.join()
+			else:
+			# serial version...
+				for i, val in enumerate(var_vals):
+					perf = worker_enc(i, val)
+					simulation_callback(perfs,i,logger,perf)
+
+			print "Simulation time: %fs"%(time()-t)
+
+	else:
+		resultclass = None
+
+		sim.load_init()
+		dims = [] # dimensions
+		par_n = [] # names
+		par_v = [] # values
+		for pp in args.par:
+			k, v = pp.split('=')
+			par_n.append(k)
+			vals = [str(simulation.parse_var_val(vv, sim.get_unit(k)))
+				for vv in v.split(',')]
+			par_v.append(vals)
+
+			if len(vals) >= 2:
+				dims.append(len(par_n) - 1)
+
+		f_ilog = open(sim.model+'_init.log', 'w')
+		f_ilog.write(','.join(['index']+par_n) + '\n')
+		var_vals = []
+		for i, val in enumerate(itertools.product(*par_v)):
+			var_vals.append(val)
+			f_ilog.write(','.join([str(i)]+list(val)) + '\n')
+		f_ilog.close()
+		if not args.nosim:
+			t = time()
+			worker_enc = partial(simulation_worker, args.file, args.start,
+					args.stop, args.step, args.initStep, args.maxStep, args.integOrder,
+					args.solver, args.nls, args.lv, sargs, par_n, resultclass, fuse_dirs)
+
+			if args.np:
+				pool = mp.Pool(processes=args.np)
+				# use apply_async in loop (not map_async) so callback runs 1x per sim.
+				for i, val in enumerate(var_vals):
+					pool.apply_async(worker_enc, args=(i, val))
+				pool.close()
+				pool.join()
+			else:
+			# serial version...
+				for i, val in enumerate(var_vals):
+					perf = worker_enc(i, val)
+			filename=args.file[:-3]
+			print filename
+			os.system('rm %s*.c'%filename)
+			os.system('rm %s*.h'%filename)
+			os.system('rm %s*.o'%filename)
+			os.system('rm %s*.xml'%filename)
+			os.system('rm %s*.json'%filename)
+			os.system('rm %s'%filename)
+			print "Simulation time: %fs"%(time()-t)
+
 
 	if args.plot is not None:
 		from solartherm import plotting
