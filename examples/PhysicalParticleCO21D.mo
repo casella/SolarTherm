@@ -37,8 +37,8 @@ model PhysicalParticleCO21D
   parameter Integer year = 1996 "Meteorological year";
   // Field, heliostat and tower
   //parameter String opt_file(fixed = false);
-  parameter String opt_file = "/media/yewang/Data/ParticleSystemRes/g3p3_opt_eff_SolarPILOT_Zeb_land.motab";
-  parameter String casefolder = "/media/yewang/Data/ParticleSystemRes/res_HT300_fb0.6/solstice_res" "case directory";
+  parameter String opt_file = Modelica.Utilities.Files.loadResource("modelica://SolarTherm/Data/Optics/g3p3_opt_eff_SolarPILOT_Zeb.motab"); 
+  //parameter String casefolder = "/media/yewang/Data/ParticleSystemRes/res_HT300_fb0.6/solstice_res" "case directory";
   parameter Solar_angles angles = Solar_angles.dec_hra "Angles used in the lookup table file";
   parameter String field_type = "polar" "Other options are : surround";
   parameter SI.Length W_helio = 10 "width of heliostat in m";
@@ -47,9 +47,9 @@ model PhysicalParticleCO21D
   parameter SI.Angle slope_error = 2e-3 "slope error of the heliostat in mrad";
   parameter SI.Length H_tower = 250 "Tower height";
   //parameter SI.Length R_tower = W_rcv / 2 "Tower diameter";
-  parameter SI.Length R_tower = 0.01 "Tower diameter";
-  parameter SI.Length R1 = 80 "distance between the first row heliostat and the tower";
-  parameter Real fb = 0.6 "factor to grow the field layout";
+  //parameter SI.Length R_tower = 0.01 "Tower diameter";
+  //parameter SI.Length R1 = 80 "distance between the first row heliostat and the tower";
+  //parameter Real fb = 0.6 "factor to grow the field layout";
   parameter Boolean single_field = true "True for single field, false for multi tower";
   parameter Boolean concrete_tower = true "True for concrete, false for thrust tower";
   parameter Real he_av_design = 0.99 "Helisotats availability";
