@@ -22,8 +22,8 @@ const char* RunSolsticeFunc(const char *ppath, const char *pname, const char *pf
 
     // add the path of the Python function file to the system path
     PyObject *sys_path = PySys_GetObject("path");
-    PyList_Append(sys_path, PyString_FromString((char *)ppath));  
-
+    PyList_Append(sys_path, PyString_FromString((char *)ppath));
+  
     // name of the Python file
     pName = PyString_FromString(pname);
     /* Error checking of pName left out */
@@ -61,6 +61,7 @@ const char* RunSolsticeFunc(const char *ppath, const char *pname, const char *pf
 
 
             Py_DECREF(pArgs);
+            Py_DECREF(inputs);
             if (pValue != NULL) {
                 Py_DECREF(pValue);
             }
@@ -83,6 +84,13 @@ const char* RunSolsticeFunc(const char *ppath, const char *pname, const char *pf
         PyErr_Print();
         fprintf(stderr, "Failed to load \"%s\"\n", pname);
     }
+    Py_DECREF(ppath);
+    Py_DECREF(pname);
+    Py_DECREF(pfunc);
+    Py_DECREF(psave);
+    Py_DECREF(varnames);
+    Py_DECREF(sys_path);
+
     Py_Finalize();
     return tablefile;
 }
