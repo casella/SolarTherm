@@ -333,29 +333,30 @@ class Simulator(object):
 			maxStep = str(parse_var_val(maxStep, 's'))
 
 		sim_args = [
-			'-override',
-			'startTime='+start+',stopTime='+stop+',stepSize='+step,
-			'-s', solver,
-			'-nls', nls, #Nonlinear solver
-			'-initialStepSize', initStep,
-			'-maxStepSize', maxStep,
-			'-maxIntegrationOrder', integOrder,
-			'-lv', lv, # Specifies which logging levels to enable
-			'-f', self.init_out_fn,
-			'-r', self.res_fn,
-            '-noEventEmit',
+			'-override'
+			,'startTime='+start+',stopTime='+stop+',stepSize='+step
+			,'-s', solver
+			,'-nls', nls #Nonlinear solver
+			,'-f', self.init_out_fn
+			,'-r', self.res_fn
+            ,'-noEventEmit'
+#			'-noEmit'
 			]
 
-		if initStep==None:
-			sim_args = [e for e in sim_args if e not in ('-initialStepSize', initStep)]
-		if maxStep==None:
-			sim_args = [e for e in sim_args if e not in ('-maxStepSize', maxStep)]
-		if integOrder==None:
-			sim_args = [e for e in sim_args if e not in ('-maxIntegrationOrder', integOrder)]
-		if lv==None:
-			sim_args = [e for e in sim_args if e not in ('-lv', lv)]
+		if initStep!=None:
+			sim_args += ['-initialStepSize', initStep]
+		if maxStep!=None:
+			sim_args += ['-maxStepSize', maxStep]
+		if integOrder!=None:
+			sim_args += ['-maxIntegrationOrder', integOrder]
+		if lv!=None:
+			sim_args += ['-lv', lv]
+
+		print "SIM:",sim_args	
+		print "SIMULATION: %s" % (" ".join(sim_args),)
 
 		sp.check_call(['./'+self.model] + sim_args + args)
 		# assert also that there must be a result file
 		assert os.access(self.res_fn,os.R_OK)
 
+# vim: noet:ts=4:sw=4
