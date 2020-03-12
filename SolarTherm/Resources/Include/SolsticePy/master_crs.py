@@ -74,7 +74,7 @@ class CRS:
             if not os.path.exists(savefolder):
                 os.makedirs(savefolder)
 
-            pos_and_aiming=radial_stagger(latitude=self.latitude, num_hst=num_hst, width=hst_w, height=hst_h, hst_z=hst_z, towerheight=tower_h, R1=R1, fb=fb, dsep=0., field='polar', savedir=self.casedir, plot=False)        
+            pos_and_aiming=radial_stagger(latitude=self.latitude, num_hst=num_hst, width=hst_w, height=hst_h, hst_z=hst_z, towerheight=tower_h, R1=R1, fb=fb, dsep=0., field=field, savedir=self.casedir, plot=False)        
               
             layout=pos_and_aiming[2:, :]
 
