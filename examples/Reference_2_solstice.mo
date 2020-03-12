@@ -33,12 +33,10 @@ model Reference_2_solstice
 	parameter nSI.Angle_deg lat = -23.795 "Latitude (+ve North)";
 	parameter nSI.Time_hour t_zone = 9.5 "Local time zone (UCT=0)";
 	parameter Integer year = 1996 "Meteorological year";
-
-	// Solstice related parameters
-	parameter String opt_file(fixed = false);
-	parameter Real metadata_list[8] = metadata(opt_file);
-	parameter Real n_heliostat = metadata_list[1] "Number of heliostats";
-    //parameter String casefolder ="/home/yewang/test";
+    
+    // Solstice related parameters
+    parameter String opt_file(fixed = false);
+    //parameter String casefolder =Modelica.Utilities.Files.loadResource("modelica://SolarTherm/SolsticeResults");
     parameter String field_type = "surround" "Other options are : surround";
     parameter SI.Length W_helio = 10 "width of heliostat in m";
     parameter SI.Length H_helio = 10 "height of heliostat in m";  
@@ -46,16 +44,17 @@ model Reference_2_solstice
     parameter SI.Angle slope_error = 2e-3 "slope error of the heliostat in mrad";
     //parameter SI.Length H_tower = 150 "Tower height";
     parameter SI.Length R_tower = 0.01 "Tower diameter";
-    parameter SI.Length R1 = 80 "distance between the first row heliostat and the tower";
+    parameter SI.Length R1 = 40 "distance between the first row heliostat and the tower";
     parameter Real fb = 0.4 "factor to grow the field layout";
     parameter String rcv_type = "cylinder" "other options are : flat, cylinder, stl";
-    parameter Real n_row_oelt = 5 "number of rows of the look up table (simulated days in a year)";
-    parameter Real n_col_oelt = 5 "number of columns of the lookup table (simulated hours per day)";
+    parameter Real n_row_oelt = 9 "number of rows of the look up table (simulated days in a year)";
+    parameter Real n_col_oelt = 25 "number of columns of the lookup table (simulated hours per day)";
     parameter SI.Length H_rcv = 20 "Receiver aperture height";
     parameter SI.Length W_rcv = 20 "Receiver aperture width or diameter";
     parameter nSI.Angle_deg tilt_rcv = 0 "tilt of receiver in degree relative to tower axis";
     parameter SI.HeatFlowRate Q_in_rcv = 10e6 "Heat from the field at design point";
-
+    parameter Real metadata_list[8] = metadata(opt_file);
+    parameter Real n_heliostat = metadata_list[1] "Number of heliostats";
 
 	// Field
 	parameter Solar_angles angles = Solar_angles.dec_hra "Angles used in the lookup table file";
@@ -458,8 +457,12 @@ model Reference_2_solstice
 	SI.Energy E_elec(start = 0, fixed = true, displayUnit="MW.h") "Generate electricity";
 	FI.Money R_spot(start = 0, fixed = true) "Spot market revenue";
 
+initial algorithm
+opt_file := heliostatsField.optical.tablefile;
+
+
 initial equation
-    opt_file = heliostatsField.optical.tablefile;
+    //opt_file = heliostatsField.optical.tablefile;
 
 	if fixed_field then
 		P_gross = Q_flow_des * eff_cyc;

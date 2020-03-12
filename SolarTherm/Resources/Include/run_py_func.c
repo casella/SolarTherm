@@ -4,9 +4,9 @@
 #include <python2.7/Python.h>
 #include <stdio.h>
 
-const char* RunSolsticeFunc(const char *ppath, const char *pname, const char *pfunc, const char *psave, const char *field_type, const char *rcv_type, int argc, const char *varnames[], const double var[]);
+const char* RunSolsticeFunc(const char *ppath, const char *pname, const char *pfunc, const char *psave,  const char *field_type, const char *rcv_type, int argc, const char *varnames[], const double var[]);
 
-const char* RunSolsticeFunc(const char *ppath, const char *pname, const char *pfunc, const char *psave, const char *field_type, const char *rcv_type, int argc, const char *varnames[], const double var[])
+const char* RunSolsticeFunc(const char *ppath, const char *pname, const char *pfunc, const char *psave,  const char *field_type, const char *rcv_type, int argc, const char *varnames[], const double var[])
 {
     // ppath: path of the Python script
     // pname: name of the Python script
