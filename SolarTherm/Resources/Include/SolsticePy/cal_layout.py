@@ -56,6 +56,7 @@ def radial_stagger(latitude, num_hst, width, height, hst_z, towerheight, R1, fb,
     print 'dRm', delta_Rmin
     print 'Nhel1', Nhel1
 
+
     while num<num_hst*3:
         Nrows= int((2.**(i))*Nhel1/5.44)
         Nhel=(2**(i))*Nhel1
@@ -101,6 +102,8 @@ def radial_stagger(latitude, num_hst, width, height, hst_z, towerheight, R1, fb,
     print ' Denest field'
     print ' total hst', num
 
+    if field=='surround':
+        num_hst*=2
     # expanding the field
     #
     Xexp=N.array([])
